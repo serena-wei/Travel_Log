@@ -1,0 +1,20 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: travellog-postgres
+    environment:
+      POSTGRES_DB: travellog
+      POSTGRES_USER: travellog
+      POSTGRES_PASSWORD: travellog
+    ports:
+      - "5432:5432"
+    volumes:
+      - travellog_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U travellog -d travellog"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  travellog_pgdata:
