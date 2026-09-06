@@ -136,13 +136,13 @@ export function RegisterPage() {
               <p className="mt-4 font-light text-[var(--color-stone)]">
                 Account{' '}
                 <span className="font-medium text-[var(--color-ink)]">{registerMutation.data.username}</span>{' '}
-                is ready. Sign-in comes next — for now you can return home.
+                is ready. Sign in to open your journal.
               </p>
               <Link
-                to="/"
+                to="/login"
                 className="mt-8 inline-flex bg-[var(--color-sea)] px-7 py-3.5 text-[11px] font-medium tracking-[0.2em] !text-white uppercase transition hover:bg-[var(--color-sea-deep)]"
               >
-                Back to home
+                Sign in
               </Link>
             </div>
           ) : (
@@ -215,11 +215,12 @@ export function RegisterPage() {
               </form>
 
               <p className="mt-6 text-sm font-light text-[var(--color-stone)]">
+                Already have an account?{' '}
                 <Link
-                  to="/"
+                  to="/login"
                   className="font-medium tracking-wide text-[var(--color-sea)] underline-offset-4 hover:underline"
                 >
-                  Back to home
+                  Sign in
                 </Link>
               </p>
             </>

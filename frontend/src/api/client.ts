@@ -16,6 +16,11 @@ export type RegisterRequest = {
   location?: string
 }
 
+export type LoginRequest = {
+  username: string
+  password: string
+}
+
 export type UserResponse = {
   id: number
   username: string
@@ -26,6 +31,12 @@ export type UserResponse = {
   description: string | null
   role: string
   active: boolean
+}
+
+export type AuthResponse = {
+  accessToken: string
+  tokenType: string
+  user: UserResponse
 }
 
 export type ApiErrorBody = {
@@ -84,6 +95,28 @@ export async function registerUser(request: RegisterRequest): Promise<UserRespon
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(request),
+  })
+  if (!response.ok) {
+    throw await parseApiError(response)
+  }
+  return response.json() as Promise<UserResponse>
+}
+
+export async function loginUser(request: LoginRequest): Promise<AuthResponse> {
+  const response = await fetch(`${API_BASE_URL}/api/v1/auth/login`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(request),
+  })
+  if (!response.ok) {
+    throw await parseApiError(response)
+  }
+  return response.json() as Promise<AuthResponse>
+}
+
+export async function fetchCurrentUser(accessToken: string): Promise<UserResponse> {
+  const response = await fetch(`${API_BASE_URL}/api/v1/users/current`, {
+    headers: { Authorization: `Bearer ${accessToken}` },
   })
   if (!response.ok) {
     throw await parseApiError(response)
