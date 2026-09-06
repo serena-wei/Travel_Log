@@ -6,16 +6,23 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.travellog.common.ConflictException;
 import com.travellog.common.ErrorCode;
+import com.travellog.common.UnauthorizedException;
+import com.travellog.security.JwtService;
 
 @Service
 public class UserAuthService {
 
 	private final UserRepository userRepository;
 	private final PasswordEncoder passwordEncoder;
+	private final JwtService jwtService;
 
-	public UserAuthService(UserRepository userRepository, PasswordEncoder passwordEncoder) {
+	public UserAuthService(
+			UserRepository userRepository,
+			PasswordEncoder passwordEncoder,
+			JwtService jwtService) {
 		this.userRepository = userRepository;
 		this.passwordEncoder = passwordEncoder;
+		this.jwtService = jwtService;
 	}
 
 	@Transactional
@@ -41,6 +48,34 @@ public class UserAuthService {
 		user.setActive(true);
 
 		return UserResponse.from(userRepository.save(user));
+	}
+
+	@Transactional(readOnly = true)
+	public AuthResponse login(LoginRequest request) {
+		String username = request.getUsername().trim();
+		User user = userRepository.findByUsername(username)
+				.orElseThrow(() -> new UnauthorizedException(
+						ErrorCode.INVALID_CREDENTIALS,
+						"Invalid username or password"));
+
+		if (!passwordEncoder.matches(request.getPassword(), user.getPasswordHash())) {
+			throw new UnauthorizedException(ErrorCode.INVALID_CREDENTIALS, "Invalid username or password");
+		}
+
+		if (!user.isActive()) {
+			throw new UnauthorizedException(ErrorCode.ACCOUNT_BANNED, "Account is banned");
+		}
+
+		return AuthResponse.bearer(jwtService.generateToken(user), user);
+	}
+
+	@Transactional(readOnly = true)
+	public UserResponse getCurrentUser(String username) {
+		User user = userRepository.findByUsername(username)
+				.orElseThrow(() -> new UnauthorizedException(
+						ErrorCode.UNAUTHORIZED,
+						"Authentication required"));
+		return UserResponse.from(user);
 	}
 
 	private static String blankToNull(String value) {

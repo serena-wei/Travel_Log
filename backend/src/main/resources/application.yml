@@ -32,8 +32,12 @@ management:
 travellog:
   cors:
     allowed-origins: http://localhost:5173
+  jwt:
+    secret: ${TRAVELLOG_JWT_SECRET:TravelLogDevSecretKeyMustBeAtLeast32BytesLong!}
+    expiration-ms: ${TRAVELLOG_JWT_EXPIRATION_MS:86400000}
 
 logging:
   level:
     org.springframework.web: INFO
     org.flywaydb: INFO
+    org.springframework.security: INFO

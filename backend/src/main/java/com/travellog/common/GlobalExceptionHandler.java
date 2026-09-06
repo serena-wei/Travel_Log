@@ -38,6 +38,16 @@ public class GlobalExceptionHandler {
 						ex.getMessage()));
 	}
 
+	@ExceptionHandler(UnauthorizedException.class)
+	public ResponseEntity<ApiError> handleUnauthorized(UnauthorizedException ex) {
+		return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+				.body(ApiError.of(
+						HttpStatus.UNAUTHORIZED.value(),
+						"Unauthorized",
+						ex.getCode(),
+						ex.getMessage()));
+	}
+
 	@ExceptionHandler(Exception.class)
 	public ResponseEntity<ApiError> handleUnexpected(Exception ex) {
 		org.slf4j.LoggerFactory.getLogger(GlobalExceptionHandler.class)
