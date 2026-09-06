@@ -39,6 +39,19 @@ npm run dev
 
 Open http://localhost:5173 — the home page should show API health `UP`.
 
+### Auth (in progress)
+
+```bash
+curl -s -X POST http://localhost:8080/api/v1/auth/register \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "username": "alice",
+    "email": "alice@example.com",
+    "password": "Secret123",
+    "confirmPassword": "Secret123"
+  }'
+```
+
 Health endpoint: `GET http://localhost:8080/api/v1/health`
 
 ## Tests
