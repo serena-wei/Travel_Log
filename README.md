@@ -41,6 +41,8 @@ Open http://localhost:5173 — the home page should show API health `UP`.
 
 ### Auth (in progress)
 
+Register:
+
 ```bash
 curl -s -X POST http://localhost:8080/api/v1/auth/register \
   -H 'Content-Type: application/json' \
@@ -50,6 +52,24 @@ curl -s -X POST http://localhost:8080/api/v1/auth/register \
     "password": "Secret123",
     "confirmPassword": "Secret123"
   }'
+```
+
+Login:
+
+```bash
+curl -s -X POST http://localhost:8080/api/v1/auth/login \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "username": "alice",
+    "password": "Secret123"
+  }'
+```
+
+Current user (replace TOKEN):
+
+```bash
+curl -s http://localhost:8080/api/v1/users/current \
+  -H "Authorization: Bearer TOKEN"
 ```
 
 Health endpoint: `GET http://localhost:8080/api/v1/health`
