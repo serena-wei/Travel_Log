@@ -13,7 +13,7 @@ vi.mock('../api/client', () => ({
 }))
 
 describe('HomePage', () => {
-  it('renders TravelLog brand and health status', async () => {
+  it('renders TravelLog brand hero and register CTA', async () => {
     const client = new QueryClient({
       defaultOptions: { queries: { retry: false } },
     })
@@ -27,7 +27,7 @@ describe('HomePage', () => {
     )
 
     expect(screen.getByRole('heading', { name: 'TravelLog' })).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Start your journal' })).toHaveAttribute('href', '/register')
     expect(await screen.findByText('UP')).toBeInTheDocument()
-    expect(screen.getByText('TravelLog', { selector: 'dd' })).toBeInTheDocument()
   })
 })
