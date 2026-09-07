@@ -169,6 +169,7 @@ export function RegisterPage() {
                   value={form.username}
                   error={fieldErrors.username}
                   onChange={(value) => updateField('username', value)}
+                  required
                 />
                 <Field
                   id="email"
@@ -178,6 +179,7 @@ export function RegisterPage() {
                   value={form.email}
                   error={fieldErrors.email}
                   onChange={(value) => updateField('email', value)}
+                  required
                 />
                 <Field
                   id="password"
@@ -188,6 +190,7 @@ export function RegisterPage() {
                   error={fieldErrors.password}
                   onChange={(value) => updateField('password', value)}
                   hint="At least 8 characters, with letters and numbers or symbols"
+                  required
                 />
                 <Field
                   id="confirmPassword"
@@ -197,6 +200,7 @@ export function RegisterPage() {
                   value={form.confirmPassword}
                   error={fieldErrors.confirmPassword}
                   onChange={(value) => updateField('confirmPassword', value)}
+                  required
                 />
 
                 {formError && (
@@ -240,9 +244,10 @@ type FieldProps = {
   hint?: string
   type?: 'text' | 'email' | 'password'
   autoComplete?: string
+  required?: boolean
 }
 
-function Field({ id, label, value, onChange, error, hint, type = 'text', autoComplete }: FieldProps) {
+function Field({ id, label, value, onChange, error, hint, type = 'text', autoComplete, required }: FieldProps) {
   return (
     <div className="mb-4">
       <label
@@ -250,6 +255,11 @@ function Field({ id, label, value, onChange, error, hint, type = 'text', autoCom
         className="mb-1.5 block text-[11px] font-medium tracking-[0.18em] text-[var(--color-stone)] uppercase"
       >
         {label}
+        {required ? (
+          <span className="ml-0.5 text-[var(--color-danger)]" aria-hidden="true">
+            *
+          </span>
+        ) : null}
       </label>
       <input
         id={id}
@@ -257,6 +267,8 @@ function Field({ id, label, value, onChange, error, hint, type = 'text', autoCom
         type={type}
         autoComplete={autoComplete}
         value={value}
+        required={required}
+        aria-required={required || undefined}
         onChange={(event) => onChange(event.target.value)}
         aria-invalid={error ? true : undefined}
         aria-describedby={error ? `${id}-error` : hint ? `${id}-hint` : undefined}

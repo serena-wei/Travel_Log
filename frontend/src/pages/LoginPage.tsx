@@ -1,8 +1,9 @@
 import { useState } from 'react'
 import type { FormEvent } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useMutation } from '@tanstack/react-query'
 import { ApiError } from '../api/client'
+import { isIntentionalLogout } from '../auth/logoutFlag'
 import { useAuth } from '../auth/useAuth'
 
 type FieldErrors = Partial<Record<'username' | 'password', string>>
@@ -12,7 +13,16 @@ const SIDE_IMAGE =
 
 export function LoginPage() {
   const navigate = useNavigate()
+  const location = useLocation()
   const { login } = useAuth()
+  const from =
+    typeof location.state === 'object' &&
+    location.state !== null &&
+    'from' in location.state &&
+    typeof location.state.from === 'string'
+      ? location.state.from
+      : null
+  const redirectTo = isIntentionalLogout() || !from ? '/journeys' : from
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({})
@@ -25,7 +35,7 @@ export function LoginPage() {
       setFormError(null)
     },
     onSuccess: () => {
-      void navigate('/', { replace: true })
+      void navigate(redirectTo, { replace: true })
     },
     onError: (error: Error) => {
       if (error instanceof ApiError) {
@@ -128,6 +138,7 @@ export function LoginPage() {
               value={username}
               error={fieldErrors.username}
               onChange={setUsername}
+              required
             />
             <Field
               id="password"
@@ -137,6 +148,7 @@ export function LoginPage() {
               value={password}
               error={fieldErrors.password}
               onChange={setPassword}
+              required
             />
 
             {formError && (
@@ -177,9 +189,10 @@ type FieldProps = {
   error?: string
   type?: 'text' | 'password'
   autoComplete?: string
+  required?: boolean
 }
 
-function Field({ id, label, value, onChange, error, type = 'text', autoComplete }: FieldProps) {
+function Field({ id, label, value, onChange, error, type = 'text', autoComplete, required }: FieldProps) {
   return (
     <div className="mb-4">
       <label
@@ -187,6 +200,11 @@ function Field({ id, label, value, onChange, error, type = 'text', autoComplete 
         className="mb-1.5 block text-[11px] font-medium tracking-[0.18em] text-[var(--color-stone)] uppercase"
       >
         {label}
+        {required ? (
+          <span className="ml-0.5 text-[var(--color-danger)]" aria-hidden="true">
+            *
+          </span>
+        ) : null}
       </label>
       <input
         id={id}
@@ -194,6 +212,8 @@ function Field({ id, label, value, onChange, error, type = 'text', autoComplete 
         type={type}
         autoComplete={autoComplete}
         value={value}
+        required={required}
+        aria-required={required || undefined}
         onChange={(event) => onChange(event.target.value)}
         aria-invalid={error ? true : undefined}
         aria-describedby={error ? `${id}-error` : undefined}

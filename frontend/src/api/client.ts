@@ -124,4 +124,92 @@ export async function fetchCurrentUser(accessToken: string): Promise<UserRespons
   return response.json() as Promise<UserResponse>
 }
 
+export type JourneyVisibility = 'PRIVATE' | 'PUBLIC'
+
+export type JourneyResponse = {
+  id: number
+  title: string
+  description: string | null
+  startDate: string | null
+  endDate: string | null
+  visibility: JourneyVisibility
+  createdAt: string
+  updatedAt: string
+}
+
+export type JourneyRequest = {
+  title: string
+  description?: string | null
+  startDate?: string | null
+  endDate?: string | null
+  visibility?: JourneyVisibility | null
+}
+
+export async function listJourneys(accessToken: string): Promise<JourneyResponse[]> {
+  const response = await fetch(`${API_BASE_URL}/api/v1/journeys`, {
+    headers: { Authorization: `Bearer ${accessToken}` },
+  })
+  if (!response.ok) {
+    throw await parseApiError(response)
+  }
+  return response.json() as Promise<JourneyResponse[]>
+}
+
+export async function getJourney(accessToken: string, id: number): Promise<JourneyResponse> {
+  const response = await fetch(`${API_BASE_URL}/api/v1/journeys/${id}`, {
+    headers: { Authorization: `Bearer ${accessToken}` },
+  })
+  if (!response.ok) {
+    throw await parseApiError(response)
+  }
+  return response.json() as Promise<JourneyResponse>
+}
+
+export async function createJourney(
+  accessToken: string,
+  request: JourneyRequest,
+): Promise<JourneyResponse> {
+  const response = await fetch(`${API_BASE_URL}/api/v1/journeys`, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(request),
+  })
+  if (!response.ok) {
+    throw await parseApiError(response)
+  }
+  return response.json() as Promise<JourneyResponse>
+}
+
+export async function updateJourney(
+  accessToken: string,
+  id: number,
+  request: JourneyRequest,
+): Promise<JourneyResponse> {
+  const response = await fetch(`${API_BASE_URL}/api/v1/journeys/${id}`, {
+    method: 'PUT',
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(request),
+  })
+  if (!response.ok) {
+    throw await parseApiError(response)
+  }
+  return response.json() as Promise<JourneyResponse>
+}
+
+export async function deleteJourney(accessToken: string, id: number): Promise<void> {
+  const response = await fetch(`${API_BASE_URL}/api/v1/journeys/${id}`, {
+    method: 'DELETE',
+    headers: { Authorization: `Bearer ${accessToken}` },
+  })
+  if (!response.ok) {
+    throw await parseApiError(response)
+  }
+}
+
 export { API_BASE_URL }

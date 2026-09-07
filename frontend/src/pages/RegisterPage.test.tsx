@@ -51,10 +51,10 @@ describe('RegisterPage', () => {
 
     renderPage()
 
-    await user.type(screen.getByLabelText('Username'), 'alice')
-    await user.type(screen.getByLabelText('Email'), 'alice@example.com')
-    await user.type(screen.getByLabelText('Password'), 'Secret123')
-    await user.type(screen.getByLabelText('Confirm password'), 'Secret123')
+    await user.type(screen.getByLabelText(/Username/i), 'alice')
+    await user.type(screen.getByLabelText(/Email/i), 'alice@example.com')
+    await user.type(screen.getByLabelText(/^Password/i), 'Secret123')
+    await user.type(screen.getByLabelText(/Confirm password/i), 'Secret123')
     await user.click(screen.getByRole('button', { name: 'Create account' }))
 
     expect(mockedRegisterUser).toHaveBeenCalledWith({
@@ -81,10 +81,10 @@ describe('RegisterPage', () => {
 
     renderPage()
 
-    await user.type(screen.getByLabelText('Username'), 'alice')
-    await user.type(screen.getByLabelText('Email'), 'alice@example.com')
-    await user.type(screen.getByLabelText('Password'), 'Secret123')
-    await user.type(screen.getByLabelText('Confirm password'), 'Secret123')
+    await user.type(screen.getByLabelText(/Username/i), 'alice')
+    await user.type(screen.getByLabelText(/Email/i), 'alice@example.com')
+    await user.type(screen.getByLabelText(/^Password/i), 'Secret123')
+    await user.type(screen.getByLabelText(/Confirm password/i), 'Secret123')
     await user.click(screen.getByRole('button', { name: 'Create account' }))
 
     expect(await screen.findByRole('alert')).toHaveTextContent('Username is already taken')
@@ -94,10 +94,10 @@ describe('RegisterPage', () => {
     const user = userEvent.setup()
     renderPage()
 
-    await user.type(screen.getByLabelText('Username'), 'alice')
-    await user.type(screen.getByLabelText('Email'), 'alice@example.com')
-    await user.type(screen.getByLabelText('Password'), 'Secret123')
-    await user.type(screen.getByLabelText('Confirm password'), 'Other123')
+    await user.type(screen.getByLabelText(/Username/i), 'alice')
+    await user.type(screen.getByLabelText(/Email/i), 'alice@example.com')
+    await user.type(screen.getByLabelText(/^Password/i), 'Secret123')
+    await user.type(screen.getByLabelText(/Confirm password/i), 'Other123')
     await user.click(screen.getByRole('button', { name: 'Create account' }))
 
     expect(await screen.findByText('Passwords do not match')).toBeInTheDocument()
