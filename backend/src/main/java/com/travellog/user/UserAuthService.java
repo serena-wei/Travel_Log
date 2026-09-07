@@ -70,8 +70,8 @@ public class UserAuthService {
 	}
 
 	@Transactional(readOnly = true)
-	public UserResponse getCurrentUser(String username) {
-		User user = userRepository.findByUsername(username)
+	public UserResponse getCurrentUser(Long userId) {
+		User user = userRepository.findById(userId)
 				.orElseThrow(() -> new UnauthorizedException(
 						ErrorCode.UNAUTHORIZED,
 						"Authentication required"));

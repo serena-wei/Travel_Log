@@ -48,6 +48,16 @@ public class GlobalExceptionHandler {
 						ex.getMessage()));
 	}
 
+	@ExceptionHandler(NotFoundException.class)
+	public ResponseEntity<ApiError> handleNotFound(NotFoundException ex) {
+		return ResponseEntity.status(HttpStatus.NOT_FOUND)
+				.body(ApiError.of(
+						HttpStatus.NOT_FOUND.value(),
+						"Not Found",
+						ex.getCode(),
+						ex.getMessage()));
+	}
+
 	@ExceptionHandler(Exception.class)
 	public ResponseEntity<ApiError> handleUnexpected(Exception ex) {
 		org.slf4j.LoggerFactory.getLogger(GlobalExceptionHandler.class)

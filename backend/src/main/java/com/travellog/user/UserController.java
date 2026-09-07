@@ -19,6 +19,6 @@ public class UserController {
 
 	@GetMapping("/current")
 	public UserResponse getCurrentUser(@AuthenticationPrincipal TravelLogUserDetails principal) {
-		return userAuthService.getCurrentUser(principal.getUsername());
+		return userAuthService.getCurrentUser(principal.getUserId());
 	}
 }
