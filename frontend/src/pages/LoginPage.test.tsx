@@ -3,10 +3,12 @@ import userEvent from '@testing-library/user-event'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { ApiError, loginUser } from '../api/client'
+import { ApiError, listJourneys, loginUser } from '../api/client'
 import { AuthProvider } from '../auth/AuthContext'
+import { RequireAuth } from '../auth/RequireAuth'
 import { clearAccessToken } from '../auth/token'
-import { HomePage } from './HomePage'
+import { clearIntentionalLogout } from '../auth/logoutFlag'
+import { JourneysPage } from './JourneysPage'
 import { LoginPage } from './LoginPage'
 
 vi.mock('../api/client', async () => {
@@ -15,15 +17,12 @@ vi.mock('../api/client', async () => {
     ...actual,
     loginUser: vi.fn(),
     fetchCurrentUser: vi.fn(),
-    fetchHealth: vi.fn().mockResolvedValue({
-      status: 'UP',
-      service: 'TravelLog',
-      timestamp: '2026-09-06T00:00:00Z',
-    }),
+    listJourneys: vi.fn().mockResolvedValue([]),
   }
 })
 
 const mockedLoginUser = vi.mocked(loginUser)
+const mockedListJourneys = vi.mocked(listJourneys)
 
 function renderLogin() {
   const client = new QueryClient({
@@ -36,7 +35,14 @@ function renderLogin() {
         <AuthProvider>
           <Routes>
             <Route path="/login" element={<LoginPage />} />
-            <Route path="/" element={<HomePage />} />
+            <Route
+              path="/journeys"
+              element={
+                <RequireAuth>
+                  <JourneysPage />
+                </RequireAuth>
+              }
+            />
           </Routes>
         </AuthProvider>
       </MemoryRouter>
@@ -47,10 +53,13 @@ function renderLogin() {
 describe('LoginPage', () => {
   beforeEach(() => {
     mockedLoginUser.mockReset()
+    mockedListJourneys.mockReset()
+    mockedListJourneys.mockResolvedValue([])
     clearAccessToken()
+    clearIntentionalLogout()
   })
 
-  it('signs in and navigates home', async () => {
+  it('signs in and navigates to journeys', async () => {
     const user = userEvent.setup()
     mockedLoginUser.mockResolvedValue({
       accessToken: 'token-123',
@@ -70,15 +79,15 @@ describe('LoginPage', () => {
 
     renderLogin()
 
-    await user.type(screen.getByLabelText('Username'), 'alice')
-    await user.type(screen.getByLabelText('Password'), 'Secret123')
+    await user.type(screen.getByLabelText(/Username/i), 'alice')
+    await user.type(screen.getByLabelText(/^Password/i), 'Secret123')
     await user.click(screen.getByRole('button', { name: 'Sign in' }))
 
     expect(mockedLoginUser).toHaveBeenCalledWith({
       username: 'alice',
       password: 'Secret123',
     })
-    expect(await screen.findByRole('heading', { name: 'TravelLog' })).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: 'Journeys' })).toBeInTheDocument()
     expect(screen.getByText('alice')).toBeInTheDocument()
   })
 
@@ -95,8 +104,8 @@ describe('LoginPage', () => {
 
     renderLogin()
 
-    await user.type(screen.getByLabelText('Username'), 'alice')
-    await user.type(screen.getByLabelText('Password'), 'wrong')
+    await user.type(screen.getByLabelText(/Username/i), 'alice')
+    await user.type(screen.getByLabelText(/^Password/i), 'wrong')
     await user.click(screen.getByRole('button', { name: 'Sign in' }))
 
     expect(await screen.findByRole('alert')).toHaveTextContent('Invalid username or password')

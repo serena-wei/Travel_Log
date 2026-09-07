@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import type { ReactNode } from 'react'
 import { ApiError, fetchCurrentUser, loginUser, type UserResponse } from '../api/client'
 import { AuthContext, type AuthContextValue } from './context'
+import { clearIntentionalLogout, markIntentionalLogout } from './logoutFlag'
 import { clearAccessToken, getAccessToken, setAccessToken } from './token'
 
 export function AuthProvider({ children }: { children: ReactNode }) {
@@ -54,11 +55,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       isBootstrapping,
       async login(username: string, password: string) {
         const response = await loginUser({ username, password })
+        clearIntentionalLogout()
         setAccessToken(response.accessToken)
         setToken(response.accessToken)
         setUser(response.user)
       },
       logout() {
+        markIntentionalLogout()
         clearAccessToken()
         setToken(null)
         setUser(null)
