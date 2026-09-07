@@ -16,6 +16,12 @@ public class TravelLogUserDetailsService implements UserDetailsService {
 		this.userRepository = userRepository;
 	}
 
+	public TravelLogUserDetails loadUserById(Long userId) {
+		return userRepository.findById(userId)
+				.map(TravelLogUserDetails::new)
+				.orElseThrow(() -> new UsernameNotFoundException("User not found"));
+	}
+
 	@Override
 	public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
 		return userRepository.findByUsername(username)

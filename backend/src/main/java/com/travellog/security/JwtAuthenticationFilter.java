@@ -5,7 +5,6 @@ import java.io.IOException;
 import org.springframework.http.HttpHeaders;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
@@ -39,10 +38,10 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
 		String token = authHeader.substring(7);
 		try {
-			String username = jwtService.extractUsername(token);
-			if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-				UserDetails userDetails = userDetailsService.loadUserByUsername(username);
-				if (jwtService.isTokenValid(token, userDetails.getUsername()) && userDetails.isEnabled()) {
+			Long userId = jwtService.extractUserId(token);
+			if (userId != null && SecurityContextHolder.getContext().getAuthentication() == null) {
+				TravelLogUserDetails userDetails = userDetailsService.loadUserById(userId);
+				if (jwtService.isTokenValid(token, userDetails.getUserId()) && userDetails.isEnabled()) {
 					UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
 							userDetails,
 							null,
