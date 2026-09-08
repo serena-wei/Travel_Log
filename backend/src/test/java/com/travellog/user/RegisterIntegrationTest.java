@@ -5,6 +5,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -16,6 +17,8 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.testcontainers.junit.jupiter.EnabledIfDockerAvailable;
 
 import com.travellog.TestcontainersConfiguration;
+import com.travellog.event.EventRepository;
+import com.travellog.journey.JourneyRepository;
 
 @EnabledIfDockerAvailable
 @SpringBootTest
@@ -30,7 +33,20 @@ class RegisterIntegrationTest {
 	private UserRepository userRepository;
 
 	@Autowired
+	private JourneyRepository journeyRepository;
+
+	@Autowired
+	private EventRepository eventRepository;
+
+	@Autowired
 	private PasswordEncoder passwordEncoder;
+
+	@BeforeEach
+	void setUp() {
+		eventRepository.deleteAll();
+		journeyRepository.deleteAll();
+		userRepository.deleteAll();
+	}
 
 	@Test
 	void registerCreatesTravellerWithHashedPassword() throws Exception {
