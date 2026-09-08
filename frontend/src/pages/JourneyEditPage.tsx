@@ -162,10 +162,10 @@ export function JourneyEditPage() {
                   {journeyQuery.data.title}
                 </h1>
                 <Link
-                  to={`/journeys/${journeyId}`}
+                  to="/journeys"
                   className="shrink-0 text-[11px] font-medium tracking-[0.2em] text-[var(--color-sea)] uppercase transition hover:text-[var(--color-sea-deep)]"
                 >
-                  ← Journey
+                  ← Journeys
                 </Link>
               </div>
             </div>

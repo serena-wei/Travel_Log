@@ -1,6 +1,6 @@
 import { Link, useNavigate, useParams } from 'react-router-dom'
-import { useQuery } from '@tanstack/react-query'
-import { ApiError, getJourney, listEvents } from '../api/client'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { ApiError, deleteEvent, getJourney, listEvents } from '../api/client'
 import { queryKeys } from '../api/queryKeys'
 import { useAuth } from '../auth/useAuth'
 
@@ -8,6 +8,7 @@ export function JourneyDetailPage() {
   const { id } = useParams()
   const journeyId = Number(id)
   const navigate = useNavigate()
+  const queryClient = useQueryClient()
   const { accessToken, logout } = useAuth()
 
   const journeyQuery = useQuery({
@@ -22,9 +23,24 @@ export function JourneyDetailPage() {
     enabled: Boolean(accessToken) && Number.isFinite(journeyId) && journeyId > 0,
   })
 
+  const deleteMutation = useMutation({
+    mutationFn: (eventId: number) => deleteEvent(accessToken!, journeyId, eventId),
+    onSuccess: async (_void, eventId) => {
+      await queryClient.invalidateQueries({ queryKey: queryKeys.events.all(journeyId) })
+      queryClient.removeQueries({ queryKey: queryKeys.events.detail(journeyId, eventId) })
+    },
+  })
+
   function handleLogout() {
     logout()
     void navigate('/', { replace: true })
+  }
+
+  function handleDeleteEvent(eventId: number, title: string) {
+    if (!window.confirm(`Delete “${title}”? This cannot be undone.`)) {
+      return
+    }
+    deleteMutation.mutate(eventId)
   }
 
   const invalidId = !Number.isFinite(journeyId) || journeyId <= 0
@@ -81,12 +97,6 @@ export function JourneyDetailPage() {
                 </h1>
                 <div className="flex shrink-0 items-center gap-4">
                   <Link
-                    to={`/journeys/${journeyId}/edit`}
-                    className="text-[11px] font-medium tracking-[0.2em] text-[var(--color-sea)] uppercase transition hover:text-[var(--color-sea-deep)]"
-                  >
-                    Edit
-                  </Link>
-                  <Link
                     to="/journeys"
                     className="text-[11px] font-medium tracking-[0.2em] text-[var(--color-sea)] uppercase transition hover:text-[var(--color-sea-deep)]"
                   >
@@ -140,6 +150,14 @@ export function JourneyDetailPage() {
                   </p>
                 )}
 
+                {deleteMutation.isError && (
+                  <p role="alert" className="mb-4 text-sm text-[var(--color-danger)]">
+                    {deleteMutation.error instanceof ApiError
+                      ? deleteMutation.error.message
+                      : 'Unable to delete event right now.'}
+                  </p>
+                )}
+
                 {eventsQuery.data && eventsQuery.data.length === 0 && (
                   <p className="text-sm font-light text-[var(--color-stone)]">
                     No events yet.{' '}
@@ -156,25 +174,59 @@ export function JourneyDetailPage() {
                 {eventsQuery.data && eventsQuery.data.length > 0 && (
                   <ul className="divide-y divide-[var(--color-line)] border-y border-[var(--color-line)]">
                     {eventsQuery.data.map((eventItem) => (
-                      <li key={eventItem.id}>
+                      <li
+                        key={eventItem.id}
+                        className="flex flex-col gap-3 py-5 sm:flex-row sm:items-center sm:justify-between sm:gap-6"
+                      >
                         <Link
                           to={`/journeys/${journeyId}/events/${eventItem.id}`}
-                          className="flex flex-col gap-1 py-5 transition hover:bg-white/70 sm:flex-row sm:items-baseline sm:justify-between sm:gap-6"
+                          className="min-w-0 flex-1 transition hover:opacity-80"
                         >
-                          <div>
-                            <p className="font-[family-name:var(--font-display)] text-2xl font-medium tracking-wide text-[var(--color-ink)]">
-                              {eventItem.title}
+                          <p className="font-[family-name:var(--font-display)] text-2xl font-medium tracking-wide text-[var(--color-ink)]">
+                            {eventItem.title}
+                          </p>
+                          {eventItem.description && (
+                            <p className="mt-1 max-w-2xl text-sm font-light text-[var(--color-stone)] line-clamp-2">
+                              {eventItem.description}
                             </p>
-                            {eventItem.description && (
-                              <p className="mt-1 max-w-2xl text-sm font-light text-[var(--color-stone)] line-clamp-2">
-                                {eventItem.description}
-                              </p>
-                            )}
-                          </div>
-                          <div className="shrink-0 text-[11px] tracking-[0.16em] text-[var(--color-stone)] uppercase">
+                          )}
+                          <div className="mt-2 text-[11px] tracking-[0.16em] text-[var(--color-stone)] uppercase">
                             {formatEventWhen(eventItem.startAt, eventItem.endAt)}
                           </div>
+                          {eventItem.photos.length > 0 && (
+                            <div className="mt-3 flex gap-2">
+                              {eventItem.photos.slice(0, 3).map((photo) => (
+                                <img
+                                  key={photo.id}
+                                  src={photo.url}
+                                  alt=""
+                                  className="h-14 w-14 object-cover border border-[var(--color-line)]"
+                                />
+                              ))}
+                              {eventItem.photos.length > 3 && (
+                                <span className="flex h-14 items-center text-xs text-[var(--color-stone)]">
+                                  +{eventItem.photos.length - 3}
+                                </span>
+                              )}
+                            </div>
+                          )}
                         </Link>
+                        <div className="flex shrink-0 items-center gap-3">
+                          <Link
+                            to={`/journeys/${journeyId}/events/${eventItem.id}/edit`}
+                            className="border border-[var(--color-line)] px-4 py-2 text-[11px] font-medium tracking-[0.2em] text-[var(--color-ink)] uppercase transition hover:border-[var(--color-sea)]"
+                          >
+                            Edit
+                          </Link>
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteEvent(eventItem.id, eventItem.title)}
+                            disabled={deleteMutation.isPending}
+                            className="border border-[var(--color-danger)] px-4 py-2 text-[11px] font-medium tracking-[0.2em] text-[var(--color-danger)] uppercase transition hover:bg-[color-mix(in_srgb,var(--color-danger)_8%,white)] disabled:cursor-not-allowed disabled:opacity-60"
+                          >
+                            Delete
+                          </button>
+                        </div>
                       </li>
                     ))}
                   </ul>

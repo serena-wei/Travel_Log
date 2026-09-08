@@ -2,9 +2,11 @@ package com.travellog.event;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -21,10 +23,18 @@ public class EventService {
 
 	private final EventRepository eventRepository;
 	private final JourneyRepository journeyRepository;
+	private final EventPhotoRepository eventPhotoRepository;
+	private final EventPhotoService eventPhotoService;
 
-	public EventService(EventRepository eventRepository, JourneyRepository journeyRepository) {
+	public EventService(
+			EventRepository eventRepository,
+			JourneyRepository journeyRepository,
+			EventPhotoRepository eventPhotoRepository,
+			EventPhotoService eventPhotoService) {
 		this.eventRepository = eventRepository;
 		this.journeyRepository = journeyRepository;
+		this.eventPhotoRepository = eventPhotoRepository;
+		this.eventPhotoService = eventPhotoService;
 	}
 
 	@Transactional
@@ -34,21 +44,45 @@ public class EventService {
 		Event event = new Event();
 		event.setJourney(journey);
 		assignEditableFields(event, request.getTitle(), request.getDescription(), request.getStartAt(), request.getEndAt());
-		return EventResponse.from(eventRepository.save(event));
+		Event saved = eventRepository.save(event);
+		return EventResponse.from(saved, List.of());
 	}
 
 	@Transactional(readOnly = true)
 	public List<EventResponse> listForCurrentUser(Long userId, Long journeyId) {
 		requireOwnedJourney(userId, journeyId);
-		return eventRepository.findByJourneyIdOrderByStartAtAsc(journeyId).stream()
-				.map(EventResponse::from)
-				.toList();
+		List<Event> events = eventRepository.findByJourneyIdOrderByStartAtAsc(journeyId);
+		if (events.isEmpty()) {
+			return List.of();
+		}
+		List<Long> eventIds = events.stream().map(Event::getId).toList();
+		Map<Long, List<EventPhoto>> photosByEventId = eventPhotoRepository
+				.findByEventIdInOrderBySortOrderAscIdAsc(eventIds)
+				.stream()
+				.collect(Collectors.groupingBy(photo -> photo.getEvent().getId(), LinkedHashMap::new, Collectors.toList()));
+
+		List<EventResponse> responses = new ArrayList<>(events.size());
+		for (Event event : events) {
+			List<EventPhotoResponse> photos = photosByEventId
+					.getOrDefault(event.getId(), List.of())
+					.stream()
+					.map(eventPhotoService::toResponse)
+					.toList();
+			responses.add(EventResponse.from(event, photos));
+		}
+		return responses;
 	}
 
 	@Transactional(readOnly = true)
 	public EventResponse getForCurrentUser(Long userId, Long journeyId, Long eventId) {
 		requireOwnedJourney(userId, journeyId);
-		return EventResponse.from(requireEventInJourney(eventId, journeyId));
+		Event event = requireEventInJourney(eventId, journeyId);
+		List<EventPhotoResponse> photos = eventPhotoRepository
+				.findByEventIdOrderBySortOrderAscIdAsc(eventId)
+				.stream()
+				.map(eventPhotoService::toResponse)
+				.toList();
+		return EventResponse.from(event, photos);
 	}
 
 	@Transactional
@@ -61,13 +95,20 @@ public class EventService {
 		validateWithinJourney(journey, request.getStartAt(), request.getEndAt());
 		Event event = requireEventInJourney(eventId, journeyId);
 		assignEditableFields(event, request.getTitle(), request.getDescription(), request.getStartAt(), request.getEndAt());
-		return EventResponse.from(eventRepository.save(event));
+		Event saved = eventRepository.save(event);
+		List<EventPhotoResponse> photos = eventPhotoRepository
+				.findByEventIdOrderBySortOrderAscIdAsc(eventId)
+				.stream()
+				.map(eventPhotoService::toResponse)
+				.toList();
+		return EventResponse.from(saved, photos);
 	}
 
 	@Transactional
 	public void deleteForCurrentUser(Long userId, Long journeyId, Long eventId) {
 		requireOwnedJourney(userId, journeyId);
 		Event event = requireEventInJourney(eventId, journeyId);
+		eventPhotoService.deleteStorageForEvent(eventId);
 		eventRepository.delete(event);
 	}
 

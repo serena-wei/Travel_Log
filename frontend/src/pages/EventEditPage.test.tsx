@@ -3,19 +3,19 @@ import userEvent from '@testing-library/user-event'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { createEvent, fetchCurrentUser } from '../api/client'
+import { fetchCurrentUser, getEvent, updateEvent, type EventResponse } from '../api/client'
 import { AuthProvider } from '../auth/AuthContext'
 import { clearIntentionalLogout } from '../auth/intentionalLogout'
 import { RequireAuth } from '../auth/RequireAuth'
 import { clearAccessToken, setAccessToken } from '../auth/token'
-import { EventCreatePage } from './EventCreatePage'
+import { EventEditPage } from './EventEditPage'
 
 vi.mock('../api/client', async () => {
   const actual = await vi.importActual<typeof import('../api/client')>('../api/client')
   return {
     ...actual,
     fetchCurrentUser: vi.fn(),
-    createEvent: vi.fn(),
+    getEvent: vi.fn(),
     getJourney: vi.fn().mockResolvedValue({
       id: 10,
       title: 'South Island',
@@ -26,11 +26,13 @@ vi.mock('../api/client', async () => {
       createdAt: '2026-09-07T00:00:00Z',
       updatedAt: '2026-09-07T00:00:00Z',
     }),
+    updateEvent: vi.fn(),
   }
 })
 
 const mockedFetchCurrentUser = vi.mocked(fetchCurrentUser)
-const mockedCreateEvent = vi.mocked(createEvent)
+const mockedGetEvent = vi.mocked(getEvent)
+const mockedUpdateEvent = vi.mocked(updateEvent)
 
 const alice = {
   id: 1,
@@ -44,21 +46,33 @@ const alice = {
   active: true,
 }
 
-function renderCreate() {
+const sampleEvent: EventResponse = {
+  id: 5,
+  journeyId: 10,
+  title: 'Flight NZ5373',
+  description: 'Wellington to Christchurch',
+  startAt: '2026-03-01T09:00:00',
+  endAt: '2026-03-01T10:20:00',
+  photos: [],
+  createdAt: '2026-09-08T00:00:00Z',
+  updatedAt: '2026-09-08T00:00:00Z',
+}
+
+function renderEdit() {
   const client = new QueryClient({
     defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
   })
 
   return render(
     <QueryClientProvider client={client}>
-      <MemoryRouter initialEntries={['/journeys/10/events/new']}>
+      <MemoryRouter initialEntries={['/journeys/10/events/5/edit']}>
         <AuthProvider>
           <Routes>
             <Route
-              path="/journeys/:journeyId/events/new"
+              path="/journeys/:journeyId/events/:eventId/edit"
               element={
                 <RequireAuth>
-                  <EventCreatePage />
+                  <EventEditPage />
                 </RequireAuth>
               }
             />
@@ -70,43 +84,39 @@ function renderCreate() {
   )
 }
 
-describe('EventCreatePage', () => {
+describe('EventEditPage', () => {
   beforeEach(() => {
     mockedFetchCurrentUser.mockReset()
-    mockedCreateEvent.mockReset()
+    mockedGetEvent.mockReset()
+    mockedUpdateEvent.mockReset()
     clearAccessToken()
     clearIntentionalLogout()
   })
 
-  it('creates an event and returns to the journey', async () => {
+  it('loads and saves event edits then returns to the journey', async () => {
     const user = userEvent.setup()
     setAccessToken('token-123')
     mockedFetchCurrentUser.mockResolvedValue(alice)
-    mockedCreateEvent.mockResolvedValue({
-      id: 5,
-      journeyId: 10,
-      title: 'Flight NZ5373',
-      description: 'Wellington to Christchurch',
-      startAt: '2026-03-01T09:00:00',
-      endAt: '2026-03-01T10:20:00',
-      photos: [],
-      createdAt: '2026-09-08T00:00:00Z',
-      updatedAt: '2026-09-08T00:00:00Z',
+    mockedGetEvent.mockResolvedValue(sampleEvent)
+    mockedUpdateEvent.mockResolvedValue({
+      ...sampleEvent,
+      title: 'Flight Updated',
+      description: 'Updated notes',
     })
 
-    renderCreate()
+    renderEdit()
 
-    expect(await screen.findByRole('heading', { name: 'Add event' })).toBeInTheDocument()
-    await user.type(screen.getByLabelText(/Title/i), 'Flight NZ5373')
-    await user.type(screen.getByLabelText(/^Description/i), 'Wellington to Christchurch')
-    await user.type(screen.getByLabelText(/^Start/i), '2026-03-01T09:00')
-    await user.type(screen.getByLabelText(/^End/i), '2026-03-01T10:20')
-    await user.click(screen.getByRole('button', { name: 'Create event' }))
+    expect(await screen.findByDisplayValue('Flight NZ5373')).toBeInTheDocument()
+    await user.clear(screen.getByLabelText(/Title/i))
+    await user.type(screen.getByLabelText(/Title/i), 'Flight Updated')
+    await user.clear(screen.getByLabelText(/^Description/i))
+    await user.type(screen.getByLabelText(/^Description/i), 'Updated notes')
+    await user.click(screen.getByRole('button', { name: 'Save changes' }))
 
     await waitFor(() => {
-      expect(mockedCreateEvent).toHaveBeenCalledWith('token-123', 10, {
-        title: 'Flight NZ5373',
-        description: 'Wellington to Christchurch',
+      expect(mockedUpdateEvent).toHaveBeenCalledWith('token-123', 10, 5, {
+        title: 'Flight Updated',
+        description: 'Updated notes',
         startAt: '2026-03-01T09:00',
         endAt: '2026-03-01T10:20',
       })

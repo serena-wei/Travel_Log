@@ -35,6 +35,11 @@ travellog:
   jwt:
     secret: ${TRAVELLOG_JWT_SECRET:TravelLogDevSecretKeyMustBeAtLeast32BytesLong!}
     expiration-ms: ${TRAVELLOG_JWT_EXPIRATION_MS:86400000}
+  s3:
+    bucket: ${TRAVELLOG_S3_BUCKET:}
+    region: ${TRAVELLOG_S3_REGION:ap-southeast-2}
+    upload-url-expiry-seconds: ${TRAVELLOG_S3_UPLOAD_URL_EXPIRY_SECONDS:900}
+    download-url-expiry-seconds: ${TRAVELLOG_S3_DOWNLOAD_URL_EXPIRY_SECONDS:3600}
 
 logging:
   level:

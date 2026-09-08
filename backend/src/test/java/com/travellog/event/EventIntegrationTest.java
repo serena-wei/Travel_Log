@@ -93,6 +93,8 @@ class EventIntegrationTest {
 				.andExpect(jsonPath("$.description").value("Wellington to Christchurch"))
 				.andExpect(jsonPath("$.startAt").value("2026-03-01T09:00:00"))
 				.andExpect(jsonPath("$.endAt").value("2026-03-01T10:20:00"))
+				.andExpect(jsonPath("$.photos").isArray())
+				.andExpect(jsonPath("$.photos.length()").value(0))
 				.andExpect(jsonPath("$.createdAt").isString())
 				.andExpect(jsonPath("$.updatedAt").isString())
 				.andReturn();

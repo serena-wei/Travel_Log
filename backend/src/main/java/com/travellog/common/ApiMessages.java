@@ -21,6 +21,11 @@ public final class ApiMessages {
 			"Must be on or after the journey start date";
 	public static final String EVENT_AFTER_JOURNEY_END =
 			"Must be on or before the journey end date";
+	public static final String PHOTO_NOT_FOUND = "Photo not found";
+	public static final String PHOTO_LIMIT_EXCEEDED = "An event can have at most 10 photos";
+	public static final String PHOTO_TYPE_UNSUPPORTED =
+			"Only JPEG, PNG, and WebP images are allowed";
+	public static final String PHOTO_TOO_LARGE = "Each photo must be 5MB or smaller";
 
 	private ApiMessages() {
 	}
