@@ -47,7 +47,7 @@ public class RegisterRequest {
 	}
 
 	@AssertTrue(message = ApiMessages.PASSWORD_COMPLEXITY)
-	public boolean meetsPasswordComplexity() {
+	public boolean isPasswordMeetingComplexity() {
 		if (password == null) {
 			return false;
 		}

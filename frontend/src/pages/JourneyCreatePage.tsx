@@ -12,7 +12,13 @@ import { useAuth } from '../auth/useAuth'
 
 type FieldErrors = Partial<Record<'title' | 'startDate' | 'endDate', string>>
 
-const emptyForm = {
+const emptyForm: {
+  title: string
+  description: string
+  startDate: string
+  endDate: string
+  visibility: JourneyVisibility
+} = {
   title: '',
   description: '',
   startDate: '',
