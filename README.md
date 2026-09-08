@@ -64,8 +64,10 @@ If port `5432` is already taken by a local Postgres, stop that service or change
 | `GET` | `/api/v1/users/current` | Bearer |
 | `GET/POST` | `/api/v1/journeys` | Bearer |
 | `GET/PUT/DELETE` | `/api/v1/journeys/{id}` | Bearer (owner only) |
+| `GET/POST` | `/api/v1/journeys/{journeyId}/events` | Bearer (journey owner) |
+| `GET/PUT/DELETE` | `/api/v1/journeys/{journeyId}/events/{eventId}` | Bearer (journey owner) |
 
-Journeys default to `PRIVATE`. Missing or non-owned ids return `404` with `JOURNEY_NOT_FOUND`.
+Journeys default to `PRIVATE`. Missing or non-owned journeys return `404` with `JOURNEY_NOT_FOUND`. Events are text-only for now (title, description, start/end time); missing events return `EVENT_NOT_FOUND`. Location and photos come in later PRs.
 
 ### Auth examples
 
@@ -130,7 +132,7 @@ docker-compose.yml
 ## Phase roadmap
 
 1. **Phase 1** — engineering skeleton, health check, CI *(done)*
-2. **Phase 2** — JWT auth + journey CRUD (API + UI) *(done)*; events MVP *(next)*
+2. **Phase 2** — JWT auth + journey CRUD (API + UI) *(done)*; event text CRUD *(in progress)*; location + photos next
 3. **Phase 3** — AWS (RDS, S3, deploy), richer tests
 4. **Phase 4** — polish for resume / demo
 
