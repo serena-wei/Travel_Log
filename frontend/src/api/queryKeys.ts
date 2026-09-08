@@ -4,4 +4,9 @@ export const queryKeys = {
     all: ['journeys'] as const,
     detail: (id: number) => ['journeys', id] as const,
   },
+  events: {
+    all: (journeyId: number) => ['journeys', journeyId, 'events'] as const,
+    detail: (journeyId: number, eventId: number) =>
+      ['journeys', journeyId, 'events', eventId] as const,
+  },
 } as const

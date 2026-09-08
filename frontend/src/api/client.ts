@@ -222,3 +222,104 @@ export async function deleteJourney(accessToken: string, id: number): Promise<vo
     throw await parseApiError(response)
   }
 }
+
+export type EventResponse = {
+  id: number
+  journeyId: number
+  title: string
+  description: string | null
+  startAt: string
+  endAt: string | null
+  createdAt: string
+  updatedAt: string
+}
+
+export type SaveEventRequest = {
+  title: string
+  description?: string | null
+  startAt: string
+  endAt?: string | null
+}
+
+export async function listEvents(
+  accessToken: string,
+  journeyId: number,
+): Promise<EventResponse[]> {
+  const response = await fetch(`${API_BASE_URL}${API_V1}/journeys/${journeyId}/events`, {
+    headers: authHeaders(accessToken),
+  })
+  if (!response.ok) {
+    throw await parseApiError(response)
+  }
+  return response.json() as Promise<EventResponse[]>
+}
+
+export async function getEvent(
+  accessToken: string,
+  journeyId: number,
+  eventId: number,
+): Promise<EventResponse> {
+  const response = await fetch(
+    `${API_BASE_URL}${API_V1}/journeys/${journeyId}/events/${eventId}`,
+    {
+      headers: authHeaders(accessToken),
+    },
+  )
+  if (!response.ok) {
+    throw await parseApiError(response)
+  }
+  return response.json() as Promise<EventResponse>
+}
+
+export async function createEvent(
+  accessToken: string,
+  journeyId: number,
+  request: SaveEventRequest,
+): Promise<EventResponse> {
+  const response = await fetch(`${API_BASE_URL}${API_V1}/journeys/${journeyId}/events`, {
+    method: 'POST',
+    headers: authJsonHeaders(accessToken),
+    body: JSON.stringify(request),
+  })
+  if (!response.ok) {
+    throw await parseApiError(response)
+  }
+  return response.json() as Promise<EventResponse>
+}
+
+export async function updateEvent(
+  accessToken: string,
+  journeyId: number,
+  eventId: number,
+  request: SaveEventRequest,
+): Promise<EventResponse> {
+  const response = await fetch(
+    `${API_BASE_URL}${API_V1}/journeys/${journeyId}/events/${eventId}`,
+    {
+      method: 'PUT',
+      headers: authJsonHeaders(accessToken),
+      body: JSON.stringify(request),
+    },
+  )
+  if (!response.ok) {
+    throw await parseApiError(response)
+  }
+  return response.json() as Promise<EventResponse>
+}
+
+export async function deleteEvent(
+  accessToken: string,
+  journeyId: number,
+  eventId: number,
+): Promise<void> {
+  const response = await fetch(
+    `${API_BASE_URL}${API_V1}/journeys/${journeyId}/events/${eventId}`,
+    {
+      method: 'DELETE',
+      headers: authHeaders(accessToken),
+    },
+  )
+  if (!response.ok) {
+    throw await parseApiError(response)
+  }
+}
