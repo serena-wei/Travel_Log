@@ -52,7 +52,9 @@ If port `5432` is already taken by a local Postgres, stop that service or change
 | `/register`, `/login` | Auth forms; login lands on `/journeys` |
 | `/journeys` | List (auth required) |
 | `/journeys/new` | Create journey |
-| `/journeys/:id` | Edit / delete journey |
+| `/journeys/:id` | Edit / delete journey; list events |
+| `/journeys/:journeyId/events/new` | Create event |
+| `/journeys/:journeyId/events/:eventId` | Edit / delete event |
 
 ### API (v1)
 
@@ -132,7 +134,7 @@ docker-compose.yml
 ## Phase roadmap
 
 1. **Phase 1** — engineering skeleton, health check, CI *(done)*
-2. **Phase 2** — JWT auth + journey CRUD (API + UI) *(done)*; event text CRUD *(in progress)*; location + photos next
+2. **Phase 2** — JWT auth + journey CRUD (API + UI) *(done)*; event text CRUD API *(done)*; event UI *(in progress)*; location + photos next
 3. **Phase 3** — AWS (RDS, S3, deploy), richer tests
 4. **Phase 4** — polish for resume / demo
 

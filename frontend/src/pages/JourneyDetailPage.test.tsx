@@ -7,6 +7,7 @@ import {
   deleteJourney,
   fetchCurrentUser,
   getJourney,
+  listEvents,
   listJourneys,
   loginUser,
   updateJourney,
@@ -28,6 +29,7 @@ vi.mock('../api/client', async () => {
     getJourney: vi.fn(),
     updateJourney: vi.fn(),
     deleteJourney: vi.fn(),
+    listEvents: vi.fn().mockResolvedValue([]),
     listJourneys: vi.fn().mockResolvedValue([]),
     loginUser: vi.fn(),
   }
@@ -37,6 +39,7 @@ const mockedFetchCurrentUser = vi.mocked(fetchCurrentUser)
 const mockedGetJourney = vi.mocked(getJourney)
 const mockedUpdateJourney = vi.mocked(updateJourney)
 const mockedDeleteJourney = vi.mocked(deleteJourney)
+const mockedListEvents = vi.mocked(listEvents)
 const mockedListJourneys = vi.mocked(listJourneys)
 const mockedLoginUser = vi.mocked(loginUser)
 
@@ -103,6 +106,8 @@ describe('JourneyDetailPage', () => {
     mockedGetJourney.mockReset()
     mockedUpdateJourney.mockReset()
     mockedDeleteJourney.mockReset()
+    mockedListEvents.mockReset()
+    mockedListEvents.mockResolvedValue([])
     mockedListJourneys.mockReset()
     mockedListJourneys.mockResolvedValue([sampleJourney])
     mockedLoginUser.mockReset()

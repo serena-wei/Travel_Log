@@ -2,75 +2,67 @@ import { useEffect, useState } from 'react'
 import type { FormEvent } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import {
-  ApiError,
-  deleteJourney,
-  getJourney,
-  listEvents,
-  updateJourney,
-  type JourneyVisibility,
-} from '../api/client'
+import { ApiError, deleteEvent, getEvent, updateEvent } from '../api/client'
 import { queryKeys } from '../api/queryKeys'
 import { useAuth } from '../auth/useAuth'
+import { toDatetimeLocalValue } from './datetimeLocal'
 
-type FieldErrors = Partial<Record<'title' | 'startDate' | 'endDate', string>>
+type FieldErrors = Partial<Record<'title' | 'startAt' | 'endAt', string>>
 
-export function JourneyDetailPage() {
-  const { id } = useParams()
-  const journeyId = Number(id)
+export function EventDetailPage() {
+  const { journeyId: journeyIdParam, eventId: eventIdParam } = useParams()
+  const journeyId = Number(journeyIdParam)
+  const eventId = Number(eventIdParam)
   const navigate = useNavigate()
   const queryClient = useQueryClient()
   const { accessToken, logout } = useAuth()
 
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
-  const [startDate, setStartDate] = useState('')
-  const [endDate, setEndDate] = useState('')
-  const [visibility, setVisibility] = useState<JourneyVisibility>('PRIVATE')
+  const [startAt, setStartAt] = useState('')
+  const [endAt, setEndAt] = useState('')
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({})
   const [formError, setFormError] = useState<string | null>(null)
   const [isFormReady, setIsFormReady] = useState(false)
 
-  const journeyQuery = useQuery({
-    queryKey: queryKeys.journeys.detail(journeyId),
-    queryFn: () => getJourney(accessToken!, journeyId),
-    enabled: Boolean(accessToken) && Number.isFinite(journeyId) && journeyId > 0,
-  })
+  const invalidIds =
+    !Number.isFinite(journeyId) ||
+    journeyId <= 0 ||
+    !Number.isFinite(eventId) ||
+    eventId <= 0
 
-  const eventsQuery = useQuery({
-    queryKey: queryKeys.events.all(journeyId),
-    queryFn: () => listEvents(accessToken!, journeyId),
-    enabled: Boolean(accessToken) && Number.isFinite(journeyId) && journeyId > 0,
+  const eventQuery = useQuery({
+    queryKey: queryKeys.events.detail(journeyId, eventId),
+    queryFn: () => getEvent(accessToken!, journeyId, eventId),
+    enabled: Boolean(accessToken) && !invalidIds,
   })
 
   useEffect(() => {
-    if (!journeyQuery.data || isFormReady) {
+    if (!eventQuery.data || isFormReady) {
       return
     }
-    setTitle(journeyQuery.data.title)
-    setDescription(journeyQuery.data.description ?? '')
-    setStartDate(journeyQuery.data.startDate ?? '')
-    setEndDate(journeyQuery.data.endDate ?? '')
-    setVisibility(journeyQuery.data.visibility)
+    setTitle(eventQuery.data.title)
+    setDescription(eventQuery.data.description ?? '')
+    setStartAt(toDatetimeLocalValue(eventQuery.data.startAt))
+    setEndAt(toDatetimeLocalValue(eventQuery.data.endAt))
     setIsFormReady(true)
-  }, [journeyQuery.data, isFormReady])
+  }, [eventQuery.data, isFormReady])
 
   const updateMutation = useMutation({
     mutationFn: () =>
-      updateJourney(accessToken!, journeyId, {
+      updateEvent(accessToken!, journeyId, eventId, {
         title: title.trim(),
         description: description.trim() || null,
-        startDate: startDate || null,
-        endDate: endDate || null,
-        visibility,
+        startAt,
+        endAt: endAt || null,
       }),
     onMutate: () => {
       setFieldErrors({})
       setFormError(null)
     },
     onSuccess: async (updated) => {
-      await queryClient.invalidateQueries({ queryKey: queryKeys.journeys.all })
-      queryClient.setQueryData(queryKeys.journeys.detail(journeyId), updated)
+      await queryClient.invalidateQueries({ queryKey: queryKeys.events.all(journeyId) })
+      queryClient.setQueryData(queryKeys.events.detail(journeyId, eventId), updated)
       setIsFormReady(true)
     },
     onError: (error: Error) => {
@@ -78,8 +70,10 @@ export function JourneyDetailPage() {
         if (error.code === 'VALIDATION_FAILED' && Object.keys(error.details).length > 0) {
           const next: FieldErrors = {}
           for (const [key, message] of Object.entries(error.details)) {
-            if (key === 'title' || key === 'startDate' || key === 'endDate') {
+            if (key === 'title' || key === 'startAt' || key === 'endAt') {
               next[key] = message
+            } else if (key === 'timeRangeValid') {
+              next.endAt = message
             } else {
               setFormError(message)
             }
@@ -90,21 +84,19 @@ export function JourneyDetailPage() {
         setFormError(error.message)
         return
       }
-      setFormError('Unable to save journey right now. Please try again.')
+      setFormError('Unable to save event right now. Please try again.')
     },
   })
 
   const deleteMutation = useMutation({
-    mutationFn: () => deleteJourney(accessToken!, journeyId),
+    mutationFn: () => deleteEvent(accessToken!, journeyId, eventId),
     onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: queryKeys.journeys.all })
-      queryClient.removeQueries({ queryKey: queryKeys.journeys.detail(journeyId) })
-      void navigate('/journeys', { replace: true })
+      await queryClient.invalidateQueries({ queryKey: queryKeys.events.all(journeyId) })
+      queryClient.removeQueries({ queryKey: queryKeys.events.detail(journeyId, eventId) })
+      void navigate(`/journeys/${journeyId}`, { replace: true })
     },
     onError: (error: Error) => {
-      setFormError(
-        error instanceof ApiError ? error.message : 'Unable to delete journey right now.',
-      )
+      setFormError(error instanceof ApiError ? error.message : 'Unable to delete event right now.')
     },
   })
 
@@ -115,8 +107,11 @@ export function JourneyDetailPage() {
     if (!title.trim()) {
       localErrors.title = 'Title is required'
     }
-    if (startDate && endDate && endDate < startDate) {
-      localErrors.endDate = 'End date must be on or after start date'
+    if (!startAt) {
+      localErrors.startAt = 'Start is required'
+    }
+    if (startAt && endAt && endAt < startAt) {
+      localErrors.endAt = 'End must be on or after start'
     }
     if (Object.keys(localErrors).length > 0) {
       setFieldErrors(localErrors)
@@ -128,7 +123,7 @@ export function JourneyDetailPage() {
   }
 
   function handleDelete() {
-    if (!window.confirm('Delete this journey? This cannot be undone.')) {
+    if (!window.confirm('Delete this event? This cannot be undone.')) {
       return
     }
     deleteMutation.mutate()
@@ -138,8 +133,6 @@ export function JourneyDetailPage() {
     logout()
     void navigate('/', { replace: true })
   }
-
-  const invalidId = !Number.isFinite(journeyId) || journeyId <= 0
 
   return (
     <div className="min-h-svh bg-[var(--color-fog)]">
@@ -162,39 +155,39 @@ export function JourneyDetailPage() {
       </header>
 
       <main className="mx-auto max-w-3xl px-6 py-12 sm:px-10 sm:py-16">
-        {invalidId && (
+        {invalidIds && (
           <p role="alert" className="text-sm text-[var(--color-danger)]">
-            Journey not found
+            Event not found
           </p>
         )}
 
-        {!invalidId && journeyQuery.isLoading && (
-          <p className="text-sm font-light text-[var(--color-stone)]">Loading journey…</p>
+        {!invalidIds && eventQuery.isLoading && (
+          <p className="text-sm font-light text-[var(--color-stone)]">Loading event…</p>
         )}
 
-        {!invalidId && journeyQuery.isError && (
+        {!invalidIds && eventQuery.isError && (
           <p role="alert" className="text-sm text-[var(--color-danger)]">
-            {journeyQuery.error instanceof ApiError
-              ? journeyQuery.error.message
-              : 'Unable to load this journey.'}
+            {eventQuery.error instanceof ApiError
+              ? eventQuery.error.message
+              : 'Unable to load this event.'}
           </p>
         )}
 
-        {!invalidId && journeyQuery.data && isFormReady && (
+        {!invalidIds && eventQuery.data && isFormReady && (
           <>
             <div>
               <p className="mb-3 text-[11px] font-medium tracking-[0.28em] text-[var(--color-gold)] uppercase">
-                Edit journey
+                Edit event
               </p>
               <div className="flex items-baseline justify-between gap-4">
                 <h1 className="font-[family-name:var(--font-display)] text-4xl font-medium tracking-wide text-[var(--color-ink)] sm:text-5xl">
-                  {journeyQuery.data.title}
+                  {eventQuery.data.title}
                 </h1>
                 <Link
-                  to="/journeys"
+                  to={`/journeys/${journeyId}`}
                   className="shrink-0 text-[11px] font-medium tracking-[0.2em] text-[var(--color-sea)] uppercase transition hover:text-[var(--color-sea-deep)]"
                 >
-                  ← Journeys
+                  ← Journey
                 </Link>
               </div>
             </div>
@@ -230,44 +223,27 @@ export function JourneyDetailPage() {
               </div>
               <div className="grid gap-4 sm:grid-cols-2">
                 <Field
-                  id="startDate"
-                  label="Start date"
-                  type="date"
-                  value={startDate}
-                  max={endDate || undefined}
-                  error={fieldErrors.startDate}
+                  id="startAt"
+                  label="Start"
+                  type="datetime-local"
+                  value={startAt}
+                  max={endAt || undefined}
+                  error={fieldErrors.startAt}
                   onChange={(value) => {
-                    setStartDate(value)
-                    setEndDate((current) => (current && value && current < value ? value : current))
+                    setStartAt(value)
+                    setEndAt((current) => (current && value && current < value ? value : current))
                   }}
+                  required
                 />
                 <Field
-                  id="endDate"
-                  label="End date"
-                  type="date"
-                  value={endDate}
-                  min={startDate || undefined}
-                  error={fieldErrors.endDate}
-                  onChange={setEndDate}
+                  id="endAt"
+                  label="End"
+                  type="datetime-local"
+                  value={endAt}
+                  min={startAt || undefined}
+                  error={fieldErrors.endAt}
+                  onChange={setEndAt}
                 />
-              </div>
-              <div className="mb-4">
-                <label
-                  htmlFor="visibility"
-                  className="mb-1.5 block text-[11px] font-medium tracking-[0.18em] text-[var(--color-stone)] uppercase"
-                >
-                  Visibility
-                </label>
-                <select
-                  id="visibility"
-                  name="visibility"
-                  value={visibility}
-                  onChange={(event) => setVisibility(event.target.value as JourneyVisibility)}
-                  className="w-full border border-[var(--color-line)] bg-[var(--color-fog)] px-3.5 py-2.5 text-[var(--color-ink)] outline-none transition focus:border-[var(--color-sea)] focus:bg-white"
-                >
-                  <option value="PRIVATE">Private</option>
-                  <option value="PUBLIC">Public</option>
-                </select>
               </div>
 
               {formError && (
@@ -300,79 +276,6 @@ export function JourneyDetailPage() {
                 </button>
               </div>
             </form>
-
-            <section className="mt-14">
-              <div className="flex items-start justify-between gap-4">
-                <div>
-                  <p className="mb-3 text-[11px] font-medium tracking-[0.28em] text-[var(--color-gold)] uppercase">
-                    Timeline
-                  </p>
-                  <h2 className="font-[family-name:var(--font-display)] text-3xl font-medium tracking-wide text-[var(--color-ink)]">
-                    Events
-                  </h2>
-                </div>
-                <Link
-                  to={`/journeys/${journeyId}/events/new`}
-                  className="shrink-0 bg-[var(--color-sea)] px-5 py-3 text-[11px] font-medium tracking-[0.2em] !text-white uppercase transition hover:bg-[var(--color-sea-deep)]"
-                >
-                  New event
-                </Link>
-              </div>
-
-              <div className="mt-8">
-                {eventsQuery.isLoading && (
-                  <p className="text-sm font-light text-[var(--color-stone)]">Loading events…</p>
-                )}
-
-                {eventsQuery.isError && (
-                  <p role="alert" className="text-sm text-[var(--color-danger)]">
-                    {eventsQuery.error instanceof ApiError
-                      ? eventsQuery.error.message
-                      : 'Unable to load events right now.'}
-                  </p>
-                )}
-
-                {eventsQuery.data && eventsQuery.data.length === 0 && (
-                  <p className="text-sm font-light text-[var(--color-stone)]">
-                    No events yet.{' '}
-                    <Link
-                      to={`/journeys/${journeyId}/events/new`}
-                      className="font-medium text-[var(--color-sea)] underline-offset-4 hover:underline"
-                    >
-                      Add the first one
-                    </Link>
-                    .
-                  </p>
-                )}
-
-                {eventsQuery.data && eventsQuery.data.length > 0 && (
-                  <ul className="divide-y divide-[var(--color-line)] border-y border-[var(--color-line)]">
-                    {eventsQuery.data.map((eventItem) => (
-                      <li key={eventItem.id}>
-                        <Link
-                          to={`/journeys/${journeyId}/events/${eventItem.id}`}
-                          className="flex flex-col gap-1 py-5 transition hover:bg-white/70 sm:flex-row sm:items-baseline sm:justify-between sm:gap-6"
-                        >
-                          <div>
-                            <p className="font-[family-name:var(--font-display)] text-2xl font-medium tracking-wide text-[var(--color-ink)]">
-                              {eventItem.title}
-                            </p>
-                            {eventItem.description && (
-                              <p className="mt-1 max-w-2xl text-sm font-light text-[var(--color-stone)] line-clamp-2">
-                                {eventItem.description}
-                              </p>
-                            )}
-                          </div>
-                          <div className="shrink-0 text-[11px] tracking-[0.16em] text-[var(--color-stone)] uppercase">
-                            {formatEventWhen(eventItem.startAt, eventItem.endAt)}
-                          </div>
-                        </Link>
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </div>
-            </section>
           </>
         )}
       </main>
@@ -386,13 +289,23 @@ type FieldProps = {
   value: string
   onChange: (value: string) => void
   error?: string
-  type?: 'text' | 'date'
+  type?: 'text' | 'datetime-local'
   min?: string
   max?: string
   required?: boolean
 }
 
-function Field({ id, label, value, onChange, error, type = 'text', min, max, required }: FieldProps) {
+function Field({
+  id,
+  label,
+  value,
+  onChange,
+  error,
+  type = 'text',
+  min,
+  max,
+  required,
+}: FieldProps) {
   return (
     <div className="mb-4">
       <label
@@ -427,12 +340,4 @@ function Field({ id, label, value, onChange, error, type = 'text', min, max, req
       )}
     </div>
   )
-}
-
-function formatEventWhen(startAt: string, endAt: string | null): string {
-  const start = startAt.replace('T', ' ').slice(0, 16)
-  if (!endAt) {
-    return start
-  }
-  return `${start} → ${endAt.replace('T', ' ').slice(0, 16)}`
 }
