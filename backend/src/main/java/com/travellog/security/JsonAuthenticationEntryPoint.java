@@ -9,6 +9,7 @@ import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.stereotype.Component;
 
 import tools.jackson.databind.ObjectMapper;
+import com.travellog.common.ApiMessages;
 import com.travellog.common.ApiError;
 import com.travellog.common.ErrorCode;
 
@@ -37,6 +38,6 @@ public class JsonAuthenticationEntryPoint implements AuthenticationEntryPoint {
 						HttpStatus.UNAUTHORIZED.value(),
 						"Unauthorized",
 						ErrorCode.UNAUTHORIZED,
-						"Authentication required"));
+						ApiMessages.AUTHENTICATION_REQUIRED));
 	}
 }

@@ -1,10 +1,10 @@
 import type { ReactNode } from 'react'
 import { Navigate, useLocation } from 'react-router-dom'
-import { isIntentionalLogout } from './logoutFlag'
+import { isIntentionalLogout } from './intentionalLogout'
 import { useAuth } from './useAuth'
 
 export function RequireAuth({ children }: { children: ReactNode }) {
-  const { user, token, isBootstrapping } = useAuth()
+  const { user, accessToken, isBootstrapping } = useAuth()
   const location = useLocation()
 
   if (isBootstrapping) {
@@ -17,7 +17,7 @@ export function RequireAuth({ children }: { children: ReactNode }) {
     )
   }
 
-  if (!user || !token) {
+  if (!user || !accessToken) {
     if (isIntentionalLogout()) {
       return <Navigate to="/login" replace />
     }

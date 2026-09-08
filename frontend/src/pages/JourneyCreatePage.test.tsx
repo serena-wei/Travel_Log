@@ -155,7 +155,7 @@ describe('JourneyCreatePage', () => {
     mockedCreateJourney.mockRejectedValue(
       new ApiError({
         status: 400,
-        error: 'Bad Request',
+        reasonPhrase: 'Bad Request',
         code: 'VALIDATION_FAILED',
         message: 'Validation failed',
         details: { title: 'Title must not be blank' },

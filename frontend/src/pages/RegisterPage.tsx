@@ -36,7 +36,7 @@ export function RegisterPage() {
               next[key] = message
             } else if (key === 'passwordConfirmed') {
               next.confirmPassword = message
-            } else if (key === 'passwordComplexEnough') {
+            } else if (key === 'meetsPasswordComplexity') {
               next.password = message
             } else {
               setFormError(message)

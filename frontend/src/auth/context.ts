@@ -3,7 +3,7 @@ import type { UserResponse } from '../api/client'
 
 export type AuthContextValue = {
   user: UserResponse | null
-  token: string | null
+  accessToken: string | null
   isBootstrapping: boolean
   login: (username: string, password: string) => Promise<void>
   logout: () => void

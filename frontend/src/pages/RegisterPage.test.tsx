@@ -73,7 +73,7 @@ describe('RegisterPage', () => {
     mockedRegisterUser.mockRejectedValue(
       new ApiError({
         status: 409,
-        error: 'Conflict',
+        reasonPhrase: 'Conflict',
         code: 'USERNAME_TAKEN',
         message: 'Username is already taken',
       }),

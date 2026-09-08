@@ -1,16 +1,17 @@
 import { Link, useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { ApiError, listJourneys } from '../api/client'
+import { queryKeys } from '../api/queryKeys'
 import { useAuth } from '../auth/useAuth'
 
 export function JourneysPage() {
   const navigate = useNavigate()
-  const { user, token, logout } = useAuth()
+  const { user, accessToken, logout } = useAuth()
 
   const journeysQuery = useQuery({
-    queryKey: ['journeys'],
-    queryFn: () => listJourneys(token!),
-    enabled: Boolean(token),
+    queryKey: queryKeys.journeys.all,
+    queryFn: () => listJourneys(accessToken!),
+    enabled: Boolean(accessToken),
   })
 
   function handleLogout() {
@@ -21,7 +22,7 @@ export function JourneysPage() {
   return (
     <div className="min-h-svh bg-[var(--color-fog)]">
       <header className="border-b border-[var(--color-line)] bg-[var(--color-paper)]">
-        <div className="mx-auto flex max-w-5xl items-center justify-between gap-4 px-6 py-5 sm:px-10">
+        <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-6 py-5 sm:px-10">
           <Link
             to="/"
             className="font-[family-name:var(--font-display)] text-2xl font-medium tracking-[0.18em] uppercase"
@@ -43,7 +44,7 @@ export function JourneysPage() {
         </div>
       </header>
 
-      <main className="mx-auto max-w-5xl px-6 py-12 sm:px-10 sm:py-16">
+      <main className="mx-auto max-w-6xl px-6 py-12 sm:px-10 sm:py-16">
         <div className="flex items-start justify-between gap-4">
           <div>
             <p className="mb-3 text-[11px] font-medium tracking-[0.28em] text-[var(--color-gold)] uppercase">

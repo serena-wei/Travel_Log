@@ -9,7 +9,8 @@ Portfolio remake of a university studio project as a production-style modular mo
 | Layer | Choice |
 |-------|--------|
 | Frontend | React, TypeScript, Vite, Tailwind CSS, TanStack Query |
-| Backend | Java 21, Spring Boot 4.1, Spring Web MVC, JPA, Flyway |
+| Backend | Java 21, Spring Boot 4.1, Spring Web MVC, Spring Security, JPA, Flyway |
+| Auth | JWT Bearer (`sub` = user id) |
 | Database | PostgreSQL 16 |
 | Local infra | Docker Compose |
 | CI | GitHub Actions |
@@ -17,7 +18,7 @@ Portfolio remake of a university studio project as a production-style modular mo
 ## Prerequisites
 
 - JDK 21+
-- Node.js 20+
+- Node.js 22+ (matches CI)
 - Docker Desktop (Compose + Testcontainers)
 
 ## Quick start
@@ -37,9 +38,36 @@ npm install
 npm run dev
 ```
 
-Open http://localhost:5173 — the home page should show API health `UP`.
+Open http://localhost:5173 — register or sign in, then use **Journeys**. The home footer shows API health `UP` when the backend is running.
 
-### Auth (in progress)
+If port `5432` is already taken by a local Postgres, stop that service or change the Compose port mapping before starting.
+
+## What works today
+
+### Frontend routes
+
+| Path | Notes |
+|------|--------|
+| `/` | Marketing home |
+| `/register`, `/login` | Auth forms; login lands on `/journeys` |
+| `/journeys` | List (auth required) |
+| `/journeys/new` | Create journey |
+| `/journeys/:id` | Edit / delete journey |
+
+### API (v1)
+
+| Method | Path | Auth |
+|--------|------|------|
+| `GET` | `/api/v1/health` | no |
+| `POST` | `/api/v1/auth/register` | no |
+| `POST` | `/api/v1/auth/login` | no |
+| `GET` | `/api/v1/users/current` | Bearer |
+| `GET/POST` | `/api/v1/journeys` | Bearer |
+| `GET/PUT/DELETE` | `/api/v1/journeys/{id}` | Bearer (owner only) |
+
+Journeys default to `PRIVATE`. Missing or non-owned ids return `404` with `JOURNEY_NOT_FOUND`.
+
+### Auth examples
 
 Register:
 
@@ -65,14 +93,15 @@ curl -s -X POST http://localhost:8080/api/v1/auth/login \
   }'
 ```
 
-Current user (replace TOKEN):
+Current user / journeys (replace `TOKEN`):
 
 ```bash
 curl -s http://localhost:8080/api/v1/users/current \
   -H "Authorization: Bearer TOKEN"
-```
 
-Health endpoint: `GET http://localhost:8080/api/v1/health`
+curl -s http://localhost:8080/api/v1/journeys \
+  -H "Authorization: Bearer TOKEN"
+```
 
 ## Tests
 
@@ -89,18 +118,19 @@ Install and start [Docker Desktop](https://www.docker.com/products/docker-deskto
 ## Repository layout
 
 ```text
-backend/     Spring Boot modular monolith
-frontend/    React SPA
+backend/                 Spring Boot modular monolith
+  src/main/java/.../user
+  src/main/java/.../journey
+  src/main/java/.../security
+frontend/                React SPA (pages, auth, api client)
 docker-compose.yml
 .github/workflows/ci.yml
 ```
 
-Domain packages (`user`, `journey`, `event`, …) are introduced in Phase 2.
-
 ## Phase roadmap
 
-1. **Phase 1 (current)** — engineering skeleton, health check, CI
-2. **Phase 2** — auth (JWT), RBAC, journeys/events MVP
+1. **Phase 1** — engineering skeleton, health check, CI *(done)*
+2. **Phase 2** — JWT auth + journey CRUD (API + UI) *(done)*; events MVP *(next)*
 3. **Phase 3** — AWS (RDS, S3, deploy), richer tests
 4. **Phase 4** — polish for resume / demo
 

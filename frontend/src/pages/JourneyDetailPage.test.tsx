@@ -13,7 +13,7 @@ import {
   type JourneyResponse,
 } from '../api/client'
 import { AuthProvider } from '../auth/AuthContext'
-import { clearIntentionalLogout } from '../auth/logoutFlag'
+import { clearIntentionalLogout } from '../auth/intentionalLogout'
 import { RequireAuth } from '../auth/RequireAuth'
 import { clearAccessToken, setAccessToken } from '../auth/token'
 import { JourneyDetailPage } from './JourneyDetailPage'

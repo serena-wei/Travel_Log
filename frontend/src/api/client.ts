@@ -1,8 +1,27 @@
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8080'
+export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8080'
+
+export const API_V1 = '/api/v1'
+
+export type JourneyVisibility = 'PRIVATE' | 'PUBLIC'
+
+function jsonHeaders(): HeadersInit {
+  return { 'Content-Type': 'application/json' }
+}
+
+function authHeaders(accessToken: string): HeadersInit {
+  return { Authorization: `Bearer ${accessToken}` }
+}
+
+function authJsonHeaders(accessToken: string): HeadersInit {
+  return {
+    ...authHeaders(accessToken),
+    ...jsonHeaders(),
+  }
+}
 
 export type HealthResponse = {
   status: string
-  service: string
+  serviceName: string
   timestamp: string
 }
 
@@ -42,7 +61,7 @@ export type AuthResponse = {
 export type ApiErrorBody = {
   timestamp?: string
   status: number
-  error: string
+  reasonPhrase: string
   code: string
   message: string
   details?: Record<string, string>
@@ -68,14 +87,14 @@ async function parseApiError(response: Response): Promise<ApiError> {
     return new ApiError({
       ...body,
       status: body.status ?? response.status,
-      error: body.error ?? response.statusText,
+      reasonPhrase: body.reasonPhrase ?? response.statusText,
       code: body.code ?? 'INTERNAL_ERROR',
       message: body.message ?? `Request failed (${response.status})`,
     })
   } catch {
     return new ApiError({
       status: response.status,
-      error: response.statusText,
+      reasonPhrase: response.statusText,
       code: 'INTERNAL_ERROR',
       message: `Request failed (${response.status})`,
     })
@@ -83,7 +102,7 @@ async function parseApiError(response: Response): Promise<ApiError> {
 }
 
 export async function fetchHealth(): Promise<HealthResponse> {
-  const response = await fetch(`${API_BASE_URL}/api/v1/health`)
+  const response = await fetch(`${API_BASE_URL}${API_V1}/health`)
   if (!response.ok) {
     throw await parseApiError(response)
   }
@@ -91,9 +110,9 @@ export async function fetchHealth(): Promise<HealthResponse> {
 }
 
 export async function registerUser(request: RegisterRequest): Promise<UserResponse> {
-  const response = await fetch(`${API_BASE_URL}/api/v1/auth/register`, {
+  const response = await fetch(`${API_BASE_URL}${API_V1}/auth/register`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: jsonHeaders(),
     body: JSON.stringify(request),
   })
   if (!response.ok) {
@@ -103,9 +122,9 @@ export async function registerUser(request: RegisterRequest): Promise<UserRespon
 }
 
 export async function loginUser(request: LoginRequest): Promise<AuthResponse> {
-  const response = await fetch(`${API_BASE_URL}/api/v1/auth/login`, {
+  const response = await fetch(`${API_BASE_URL}${API_V1}/auth/login`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: jsonHeaders(),
     body: JSON.stringify(request),
   })
   if (!response.ok) {
@@ -115,16 +134,14 @@ export async function loginUser(request: LoginRequest): Promise<AuthResponse> {
 }
 
 export async function fetchCurrentUser(accessToken: string): Promise<UserResponse> {
-  const response = await fetch(`${API_BASE_URL}/api/v1/users/current`, {
-    headers: { Authorization: `Bearer ${accessToken}` },
+  const response = await fetch(`${API_BASE_URL}${API_V1}/users/current`, {
+    headers: authHeaders(accessToken),
   })
   if (!response.ok) {
     throw await parseApiError(response)
   }
   return response.json() as Promise<UserResponse>
 }
-
-export type JourneyVisibility = 'PRIVATE' | 'PUBLIC'
 
 export type JourneyResponse = {
   id: number
@@ -137,7 +154,7 @@ export type JourneyResponse = {
   updatedAt: string
 }
 
-export type JourneyRequest = {
+export type SaveJourneyRequest = {
   title: string
   description?: string | null
   startDate?: string | null
@@ -146,8 +163,8 @@ export type JourneyRequest = {
 }
 
 export async function listJourneys(accessToken: string): Promise<JourneyResponse[]> {
-  const response = await fetch(`${API_BASE_URL}/api/v1/journeys`, {
-    headers: { Authorization: `Bearer ${accessToken}` },
+  const response = await fetch(`${API_BASE_URL}${API_V1}/journeys`, {
+    headers: authHeaders(accessToken),
   })
   if (!response.ok) {
     throw await parseApiError(response)
@@ -156,8 +173,8 @@ export async function listJourneys(accessToken: string): Promise<JourneyResponse
 }
 
 export async function getJourney(accessToken: string, id: number): Promise<JourneyResponse> {
-  const response = await fetch(`${API_BASE_URL}/api/v1/journeys/${id}`, {
-    headers: { Authorization: `Bearer ${accessToken}` },
+  const response = await fetch(`${API_BASE_URL}${API_V1}/journeys/${id}`, {
+    headers: authHeaders(accessToken),
   })
   if (!response.ok) {
     throw await parseApiError(response)
@@ -167,14 +184,11 @@ export async function getJourney(accessToken: string, id: number): Promise<Journ
 
 export async function createJourney(
   accessToken: string,
-  request: JourneyRequest,
+  request: SaveJourneyRequest,
 ): Promise<JourneyResponse> {
-  const response = await fetch(`${API_BASE_URL}/api/v1/journeys`, {
+  const response = await fetch(`${API_BASE_URL}${API_V1}/journeys`, {
     method: 'POST',
-    headers: {
-      Authorization: `Bearer ${accessToken}`,
-      'Content-Type': 'application/json',
-    },
+    headers: authJsonHeaders(accessToken),
     body: JSON.stringify(request),
   })
   if (!response.ok) {
@@ -186,14 +200,11 @@ export async function createJourney(
 export async function updateJourney(
   accessToken: string,
   id: number,
-  request: JourneyRequest,
+  request: SaveJourneyRequest,
 ): Promise<JourneyResponse> {
-  const response = await fetch(`${API_BASE_URL}/api/v1/journeys/${id}`, {
+  const response = await fetch(`${API_BASE_URL}${API_V1}/journeys/${id}`, {
     method: 'PUT',
-    headers: {
-      Authorization: `Bearer ${accessToken}`,
-      'Content-Type': 'application/json',
-    },
+    headers: authJsonHeaders(accessToken),
     body: JSON.stringify(request),
   })
   if (!response.ok) {
@@ -203,13 +214,11 @@ export async function updateJourney(
 }
 
 export async function deleteJourney(accessToken: string, id: number): Promise<void> {
-  const response = await fetch(`${API_BASE_URL}/api/v1/journeys/${id}`, {
+  const response = await fetch(`${API_BASE_URL}${API_V1}/journeys/${id}`, {
     method: 'DELETE',
-    headers: { Authorization: `Bearer ${accessToken}` },
+    headers: authHeaders(accessToken),
   })
   if (!response.ok) {
     throw await parseApiError(response)
   }
 }
-
-export { API_BASE_URL }

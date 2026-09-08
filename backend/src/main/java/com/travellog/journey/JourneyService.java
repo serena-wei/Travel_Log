@@ -5,6 +5,7 @@ import java.util.List;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.travellog.common.ApiMessages;
 import com.travellog.common.ErrorCode;
 import com.travellog.common.NotFoundException;
 import com.travellog.common.UnauthorizedException;
@@ -28,7 +29,7 @@ public class JourneyService {
 		Journey journey = new Journey();
 		journey.setUser(user);
 		journey.setTitle(request.getTitle().trim());
-		journey.setDescription(blankToNull(request.getDescription()));
+		journey.setDescription(trimToNull(request.getDescription()));
 		journey.setStartDate(request.getStartDate());
 		journey.setEndDate(request.getEndDate());
 		journey.setVisibility(request.getVisibility() == null
@@ -47,17 +48,17 @@ public class JourneyService {
 	@Transactional(readOnly = true)
 	public JourneyResponse getForCurrentUser(Long userId, Long journeyId) {
 		Journey journey = journeyRepository.findByIdAndUserId(journeyId, userId)
-				.orElseThrow(() -> new NotFoundException(ErrorCode.JOURNEY_NOT_FOUND, "Journey not found"));
+				.orElseThrow(() -> new NotFoundException(ErrorCode.JOURNEY_NOT_FOUND, ApiMessages.JOURNEY_NOT_FOUND));
 		return JourneyResponse.from(journey);
 	}
 
 	@Transactional
 	public JourneyResponse updateForCurrentUser(Long userId, Long journeyId, UpdateJourneyRequest request) {
 		Journey journey = journeyRepository.findByIdAndUserId(journeyId, userId)
-				.orElseThrow(() -> new NotFoundException(ErrorCode.JOURNEY_NOT_FOUND, "Journey not found"));
+				.orElseThrow(() -> new NotFoundException(ErrorCode.JOURNEY_NOT_FOUND, ApiMessages.JOURNEY_NOT_FOUND));
 
 		journey.setTitle(request.getTitle().trim());
-		journey.setDescription(blankToNull(request.getDescription()));
+		journey.setDescription(trimToNull(request.getDescription()));
 		journey.setStartDate(request.getStartDate());
 		journey.setEndDate(request.getEndDate());
 		if (request.getVisibility() != null) {
@@ -69,7 +70,7 @@ public class JourneyService {
 	@Transactional
 	public void deleteForCurrentUser(Long userId, Long journeyId) {
 		Journey journey = journeyRepository.findByIdAndUserId(journeyId, userId)
-				.orElseThrow(() -> new NotFoundException(ErrorCode.JOURNEY_NOT_FOUND, "Journey not found"));
+				.orElseThrow(() -> new NotFoundException(ErrorCode.JOURNEY_NOT_FOUND, ApiMessages.JOURNEY_NOT_FOUND));
 		journeyRepository.delete(journey);
 	}
 
@@ -77,10 +78,10 @@ public class JourneyService {
 		return userRepository.findById(userId)
 				.orElseThrow(() -> new UnauthorizedException(
 						ErrorCode.UNAUTHORIZED,
-						"Authentication required"));
+						ApiMessages.AUTHENTICATION_REQUIRED));
 	}
 
-	private static String blankToNull(String value) {
+	private static String trimToNull(String value) {
 		if (value == null || value.isBlank()) {
 			return null;
 		}

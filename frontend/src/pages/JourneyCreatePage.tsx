@@ -7,6 +7,7 @@ import {
   createJourney,
   type JourneyVisibility,
 } from '../api/client'
+import { queryKeys } from '../api/queryKeys'
 import { useAuth } from '../auth/useAuth'
 
 type FieldErrors = Partial<Record<'title' | 'startDate' | 'endDate', string>>
@@ -16,20 +17,20 @@ const emptyForm = {
   description: '',
   startDate: '',
   endDate: '',
-  visibility: 'PRIVATE' as JourneyVisibility,
+  visibility: 'PRIVATE',
 }
 
 export function JourneyCreatePage() {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
-  const { token, logout } = useAuth()
+  const { accessToken, logout } = useAuth()
   const [form, setForm] = useState(emptyForm)
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({})
   const [formError, setFormError] = useState<string | null>(null)
 
   const createMutation = useMutation({
     mutationFn: () =>
-      createJourney(token!, {
+      createJourney(accessToken!, {
         title: form.title.trim(),
         description: form.description.trim() || null,
         startDate: form.startDate || null,
@@ -41,7 +42,7 @@ export function JourneyCreatePage() {
       setFormError(null)
     },
     onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ['journeys'] })
+      await queryClient.invalidateQueries({ queryKey: queryKeys.journeys.all })
       void navigate('/journeys', { replace: true })
     },
     onError: (error: Error) => {

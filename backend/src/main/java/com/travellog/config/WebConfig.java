@@ -15,6 +15,8 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 @Configuration
 public class WebConfig implements WebMvcConfigurer {
 
+	private static final List<String> CORS_METHODS = List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS");
+
 	@Value("${travellog.cors.allowed-origins:http://localhost:5173}")
 	private String allowedOrigins;
 
@@ -22,7 +24,7 @@ public class WebConfig implements WebMvcConfigurer {
 	public void addCorsMappings(CorsRegistry registry) {
 		registry.addMapping("/api/**")
 				.allowedOrigins(splitOrigins())
-				.allowedMethods("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS")
+				.allowedMethods(CORS_METHODS.toArray(String[]::new))
 				.allowedHeaders("*")
 				.allowCredentials(true);
 	}
@@ -31,7 +33,7 @@ public class WebConfig implements WebMvcConfigurer {
 	CorsConfigurationSource corsConfigurationSource() {
 		CorsConfiguration configuration = new CorsConfiguration();
 		configuration.setAllowedOrigins(List.of(splitOrigins()));
-		configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
+		configuration.setAllowedMethods(CORS_METHODS);
 		configuration.setAllowedHeaders(List.of("*"));
 		configuration.setAllowCredentials(true);
 

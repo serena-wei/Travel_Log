@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { fetchHealth } from '../api/client'
+import { queryKeys } from '../api/queryKeys'
 import { useAuth } from '../auth/useAuth'
 
 const HERO_IMAGE =
@@ -9,7 +10,7 @@ const HERO_IMAGE =
 export function HomePage() {
   const { user, isBootstrapping, logout } = useAuth()
   const healthQuery = useQuery({
-    queryKey: ['health'],
+    queryKey: queryKeys.health,
     queryFn: fetchHealth,
   })
 

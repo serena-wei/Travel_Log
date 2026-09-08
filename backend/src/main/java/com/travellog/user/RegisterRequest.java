@@ -1,5 +1,7 @@
 package com.travellog.user;
 
+import com.travellog.common.ApiMessages;
+
 import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
@@ -36,7 +38,7 @@ public class RegisterRequest {
 	@Size(max = 255)
 	private String location;
 
-	@AssertTrue(message = "Passwords do not match")
+	@AssertTrue(message = ApiMessages.PASSWORDS_DO_NOT_MATCH)
 	public boolean isPasswordConfirmed() {
 		if (password == null || confirmPassword == null) {
 			return false;
@@ -44,8 +46,8 @@ public class RegisterRequest {
 		return password.equals(confirmPassword);
 	}
 
-	@AssertTrue(message = "Password must include letters and numbers or symbols")
-	public boolean isPasswordComplexEnough() {
+	@AssertTrue(message = ApiMessages.PASSWORD_COMPLEXITY)
+	public boolean meetsPasswordComplexity() {
 		if (password == null) {
 			return false;
 		}

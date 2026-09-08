@@ -2,6 +2,8 @@ package com.travellog.journey;
 
 import java.time.LocalDate;
 
+import com.travellog.common.ApiMessages;
+
 import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
@@ -25,7 +27,7 @@ public class UpdateJourneyRequest {
 
 	private JourneyVisibility visibility;
 
-	@AssertTrue(message = "End date must be on or after start date")
+	@AssertTrue(message = ApiMessages.DATE_RANGE_INVALID)
 	public boolean isDateRangeValid() {
 		if (startDate == null || endDate == null) {
 			return true;
