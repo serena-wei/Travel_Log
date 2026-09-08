@@ -24,7 +24,7 @@ public class GlobalExceptionHandler {
 						HttpStatus.BAD_REQUEST.value(),
 						"Bad Request",
 						ErrorCode.VALIDATION_FAILED,
-						"Validation failed",
+						ApiMessages.VALIDATION_FAILED,
 						details));
 	}
 
@@ -67,6 +67,6 @@ public class GlobalExceptionHandler {
 						HttpStatus.INTERNAL_SERVER_ERROR.value(),
 						"Internal Server Error",
 						ErrorCode.INTERNAL_ERROR,
-						"An unexpected error occurred"));
+						ApiMessages.UNEXPECTED_ERROR));
 	}
 }

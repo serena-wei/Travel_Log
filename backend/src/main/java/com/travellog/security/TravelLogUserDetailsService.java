@@ -5,6 +5,7 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
+import com.travellog.common.ApiMessages;
 import com.travellog.user.UserRepository;
 
 @Service
@@ -19,13 +20,13 @@ public class TravelLogUserDetailsService implements UserDetailsService {
 	public TravelLogUserDetails loadUserById(Long userId) {
 		return userRepository.findById(userId)
 				.map(TravelLogUserDetails::new)
-				.orElseThrow(() -> new UsernameNotFoundException("User not found"));
+				.orElseThrow(() -> new UsernameNotFoundException(ApiMessages.USER_NOT_FOUND));
 	}
 
 	@Override
 	public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
 		return userRepository.findByUsername(username)
 				.map(TravelLogUserDetails::new)
-				.orElseThrow(() -> new UsernameNotFoundException("User not found"));
+				.orElseThrow(() -> new UsernameNotFoundException(ApiMessages.USER_NOT_FOUND));
 	}
 }

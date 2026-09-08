@@ -11,7 +11,7 @@ vi.mock('../api/client', async () => {
     ...actual,
     fetchHealth: vi.fn().mockResolvedValue({
       status: 'UP',
-      service: 'TravelLog',
+      serviceName: 'TravelLog',
       timestamp: '2026-09-06T00:00:00Z',
     }),
   }

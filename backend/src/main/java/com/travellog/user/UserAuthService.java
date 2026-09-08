@@ -4,6 +4,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.travellog.common.ApiMessages;
 import com.travellog.common.ConflictException;
 import com.travellog.common.ErrorCode;
 import com.travellog.common.UnauthorizedException;
@@ -31,19 +32,19 @@ public class UserAuthService {
 		String email = request.getEmail().trim().toLowerCase();
 
 		if (userRepository.existsByUsername(username)) {
-			throw new ConflictException(ErrorCode.USERNAME_TAKEN, "Username is already taken");
+			throw new ConflictException(ErrorCode.USERNAME_TAKEN, ApiMessages.USERNAME_TAKEN);
 		}
 		if (userRepository.existsByEmailIgnoreCase(email)) {
-			throw new ConflictException(ErrorCode.EMAIL_IN_USE, "Email is already in use");
+			throw new ConflictException(ErrorCode.EMAIL_IN_USE, ApiMessages.EMAIL_IN_USE);
 		}
 
 		User user = new User();
 		user.setUsername(username);
 		user.setEmail(email);
 		user.setPasswordHash(passwordEncoder.encode(request.getPassword()));
-		user.setFirstName(blankToNull(request.getFirstName()));
-		user.setLastName(blankToNull(request.getLastName()));
-		user.setLocation(blankToNull(request.getLocation()));
+		user.setFirstName(trimToNull(request.getFirstName()));
+		user.setLastName(trimToNull(request.getLastName()));
+		user.setLocation(trimToNull(request.getLocation()));
 		user.setRole(UserRole.TRAVELLER);
 		user.setActive(true);
 
@@ -56,14 +57,14 @@ public class UserAuthService {
 		User user = userRepository.findByUsername(username)
 				.orElseThrow(() -> new UnauthorizedException(
 						ErrorCode.INVALID_CREDENTIALS,
-						"Invalid username or password"));
+						ApiMessages.INVALID_CREDENTIALS));
 
 		if (!passwordEncoder.matches(request.getPassword(), user.getPasswordHash())) {
-			throw new UnauthorizedException(ErrorCode.INVALID_CREDENTIALS, "Invalid username or password");
+			throw new UnauthorizedException(ErrorCode.INVALID_CREDENTIALS, ApiMessages.INVALID_CREDENTIALS);
 		}
 
 		if (!user.isActive()) {
-			throw new UnauthorizedException(ErrorCode.ACCOUNT_BANNED, "Account is banned");
+			throw new UnauthorizedException(ErrorCode.ACCOUNT_DISABLED, ApiMessages.ACCOUNT_DISABLED);
 		}
 
 		return AuthResponse.bearer(jwtService.generateToken(user), user);
@@ -74,11 +75,11 @@ public class UserAuthService {
 		User user = userRepository.findById(userId)
 				.orElseThrow(() -> new UnauthorizedException(
 						ErrorCode.UNAUTHORIZED,
-						"Authentication required"));
+						ApiMessages.AUTHENTICATION_REQUIRED));
 		return UserResponse.from(user);
 	}
 
-	private static String blankToNull(String value) {
+	private static String trimToNull(String value) {
 		if (value == null || value.isBlank()) {
 			return null;
 		}

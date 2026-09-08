@@ -2,11 +2,11 @@ import { useEffect, useMemo, useState } from 'react'
 import type { ReactNode } from 'react'
 import { ApiError, fetchCurrentUser, loginUser, type UserResponse } from '../api/client'
 import { AuthContext, type AuthContextValue } from './context'
-import { clearIntentionalLogout, markIntentionalLogout } from './logoutFlag'
+import { clearIntentionalLogout, markIntentionalLogout } from './intentionalLogout'
 import { clearAccessToken, getAccessToken, setAccessToken } from './token'
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [token, setToken] = useState<string | null>(() => getAccessToken())
+  const [accessToken, setAccessTokenState] = useState<string | null>(() => getAccessToken())
   const [user, setUser] = useState<UserResponse | null>(null)
   const [isBootstrapping, setIsBootstrapping] = useState(() => Boolean(getAccessToken()))
 
@@ -23,13 +23,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       try {
         const currentUser = await fetchCurrentUser(existing)
         if (!cancelled) {
-          setToken(existing)
+          setAccessTokenState(existing)
           setUser(currentUser)
         }
       } catch (error) {
         clearAccessToken()
         if (!cancelled) {
-          setToken(null)
+          setAccessTokenState(null)
           setUser(null)
           if (!(error instanceof ApiError && error.status === 401)) {
             console.error(error)
@@ -51,23 +51,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const value = useMemo<AuthContextValue>(
     () => ({
       user,
-      token,
+      accessToken,
       isBootstrapping,
       async login(username: string, password: string) {
         const response = await loginUser({ username, password })
         clearIntentionalLogout()
         setAccessToken(response.accessToken)
-        setToken(response.accessToken)
+        setAccessTokenState(response.accessToken)
         setUser(response.user)
       },
       logout() {
         markIntentionalLogout()
         clearAccessToken()
-        setToken(null)
+        setAccessTokenState(null)
         setUser(null)
       },
     }),
-    [user, token, isBootstrapping],
+    [user, accessToken, isBootstrapping],
   )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

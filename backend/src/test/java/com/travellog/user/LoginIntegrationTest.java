@@ -106,7 +106,7 @@ class LoginIntegrationTest {
 								}
 								"""))
 				.andExpect(status().isUnauthorized())
-				.andExpect(jsonPath("$.code").value("ACCOUNT_BANNED"));
+				.andExpect(jsonPath("$.code").value("ACCOUNT_DISABLED"));
 	}
 
 	private void register(String username, String email, String password) throws Exception {

@@ -9,6 +9,7 @@ import {
   updateJourney,
   type JourneyVisibility,
 } from '../api/client'
+import { queryKeys } from '../api/queryKeys'
 import { useAuth } from '../auth/useAuth'
 
 type FieldErrors = Partial<Record<'title' | 'startDate' | 'endDate', string>>
@@ -18,7 +19,7 @@ export function JourneyDetailPage() {
   const journeyId = Number(id)
   const navigate = useNavigate()
   const queryClient = useQueryClient()
-  const { token, logout } = useAuth()
+  const { accessToken, logout } = useAuth()
 
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
@@ -27,16 +28,16 @@ export function JourneyDetailPage() {
   const [visibility, setVisibility] = useState<JourneyVisibility>('PRIVATE')
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({})
   const [formError, setFormError] = useState<string | null>(null)
-  const [hydrated, setHydrated] = useState(false)
+  const [isFormReady, setIsFormReady] = useState(false)
 
   const journeyQuery = useQuery({
-    queryKey: ['journeys', journeyId],
-    queryFn: () => getJourney(token!, journeyId),
-    enabled: Boolean(token) && Number.isFinite(journeyId) && journeyId > 0,
+    queryKey: queryKeys.journeys.detail(journeyId),
+    queryFn: () => getJourney(accessToken!, journeyId),
+    enabled: Boolean(accessToken) && Number.isFinite(journeyId) && journeyId > 0,
   })
 
   useEffect(() => {
-    if (!journeyQuery.data || hydrated) {
+    if (!journeyQuery.data || isFormReady) {
       return
     }
     setTitle(journeyQuery.data.title)
@@ -44,12 +45,12 @@ export function JourneyDetailPage() {
     setStartDate(journeyQuery.data.startDate ?? '')
     setEndDate(journeyQuery.data.endDate ?? '')
     setVisibility(journeyQuery.data.visibility)
-    setHydrated(true)
-  }, [journeyQuery.data, hydrated])
+    setIsFormReady(true)
+  }, [journeyQuery.data, isFormReady])
 
   const updateMutation = useMutation({
     mutationFn: () =>
-      updateJourney(token!, journeyId, {
+      updateJourney(accessToken!, journeyId, {
         title: title.trim(),
         description: description.trim() || null,
         startDate: startDate || null,
@@ -61,9 +62,9 @@ export function JourneyDetailPage() {
       setFormError(null)
     },
     onSuccess: async (updated) => {
-      await queryClient.invalidateQueries({ queryKey: ['journeys'] })
-      queryClient.setQueryData(['journeys', journeyId], updated)
-      setHydrated(true)
+      await queryClient.invalidateQueries({ queryKey: queryKeys.journeys.all })
+      queryClient.setQueryData(queryKeys.journeys.detail(journeyId), updated)
+      setIsFormReady(true)
     },
     onError: (error: Error) => {
       if (error instanceof ApiError) {
@@ -87,10 +88,10 @@ export function JourneyDetailPage() {
   })
 
   const deleteMutation = useMutation({
-    mutationFn: () => deleteJourney(token!, journeyId),
+    mutationFn: () => deleteJourney(accessToken!, journeyId),
     onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ['journeys'] })
-      queryClient.removeQueries({ queryKey: ['journeys', journeyId] })
+      await queryClient.invalidateQueries({ queryKey: queryKeys.journeys.all })
+      queryClient.removeQueries({ queryKey: queryKeys.journeys.detail(journeyId) })
       void navigate('/journeys', { replace: true })
     },
     onError: (error: Error) => {
@@ -172,7 +173,7 @@ export function JourneyDetailPage() {
           </p>
         )}
 
-        {!invalidId && journeyQuery.data && hydrated && (
+        {!invalidId && journeyQuery.data && isFormReady && (
           <>
             <div>
               <p className="mb-3 text-[11px] font-medium tracking-[0.28em] text-[var(--color-gold)] uppercase">

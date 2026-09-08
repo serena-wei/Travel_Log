@@ -7,7 +7,7 @@ import { ApiError, listJourneys, loginUser } from '../api/client'
 import { AuthProvider } from '../auth/AuthContext'
 import { RequireAuth } from '../auth/RequireAuth'
 import { clearAccessToken } from '../auth/token'
-import { clearIntentionalLogout } from '../auth/logoutFlag'
+import { clearIntentionalLogout } from '../auth/intentionalLogout'
 import { JourneysPage } from './JourneysPage'
 import { LoginPage } from './LoginPage'
 
@@ -96,7 +96,7 @@ describe('LoginPage', () => {
     mockedLoginUser.mockRejectedValue(
       new ApiError({
         status: 401,
-        error: 'Unauthorized',
+        reasonPhrase: 'Unauthorized',
         code: 'INVALID_CREDENTIALS',
         message: 'Invalid username or password',
       }),

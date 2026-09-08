@@ -3,7 +3,7 @@ import type { FormEvent } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useMutation } from '@tanstack/react-query'
 import { ApiError } from '../api/client'
-import { isIntentionalLogout } from '../auth/logoutFlag'
+import { isIntentionalLogout } from '../auth/intentionalLogout'
 import { useAuth } from '../auth/useAuth'
 
 type FieldErrors = Partial<Record<'username' | 'password', string>>
