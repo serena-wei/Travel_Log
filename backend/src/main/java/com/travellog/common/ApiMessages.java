@@ -17,6 +17,10 @@ public final class ApiMessages {
 			"Password must include letters and numbers or symbols";
 	public static final String DATE_RANGE_INVALID = "End date must be on or after start date";
 	public static final String TIME_RANGE_INVALID = "End must be on or after start";
+	public static final String EVENT_BEFORE_JOURNEY_START =
+			"Must be on or after the journey start date";
+	public static final String EVENT_AFTER_JOURNEY_END =
+			"Must be on or before the journey end date";
 
 	private ApiMessages() {
 	}

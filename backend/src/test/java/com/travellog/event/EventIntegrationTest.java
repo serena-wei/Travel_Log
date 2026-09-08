@@ -184,7 +184,7 @@ class EventIntegrationTest {
 	@Test
 	void rejectsInvalidTimeRange() throws Exception {
 		String token = loginAndGetToken("alice", "Secret123");
-		Long journeyId = createJourney(token, "Bad Dates");
+		Long journeyId = createJourney(token, "Bad Dates", null, null);
 
 		mockMvc.perform(post("/api/v1/journeys/" + journeyId + "/events")
 						.header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
@@ -198,6 +198,38 @@ class EventIntegrationTest {
 								"""))
 				.andExpect(status().isBadRequest())
 				.andExpect(jsonPath("$.code").value("VALIDATION_FAILED"));
+	}
+
+	@Test
+	void rejectsEventOutsideJourneyDates() throws Exception {
+		String token = loginAndGetToken("alice", "Secret123");
+		Long journeyId = createJourney(token, "Dated Trip", "2026-03-10", "2026-03-20");
+
+		mockMvc.perform(post("/api/v1/journeys/" + journeyId + "/events")
+						.header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("""
+								{
+								  "title": "Too early",
+								  "startAt": "2026-03-01T09:00:00"
+								}
+								"""))
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.code").value("VALIDATION_FAILED"))
+				.andExpect(jsonPath("$.details.startAt").value("Must be on or after the journey start date"));
+
+		mockMvc.perform(post("/api/v1/journeys/" + journeyId + "/events")
+						.header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("""
+								{
+								  "title": "Too late",
+								  "startAt": "2026-03-25T09:00:00"
+								}
+								"""))
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.code").value("VALIDATION_FAILED"))
+				.andExpect(jsonPath("$.details.startAt").value("Must be on or before the journey end date"));
 	}
 
 	private void register(String username, String email, String password) throws Exception {
@@ -230,14 +262,26 @@ class EventIntegrationTest {
 	}
 
 	private Long createJourney(String token, String title) throws Exception {
+		return createJourney(token, title, null, null);
+	}
+
+	private Long createJourney(String token, String title, String startDate, String endDate) throws Exception {
+		StringBuilder payload = new StringBuilder("""
+				{
+				  "title": "%s"
+				""".formatted(title));
+		if (startDate != null) {
+			payload.append(",\n  \"startDate\": \"").append(startDate).append('"');
+		}
+		if (endDate != null) {
+			payload.append(",\n  \"endDate\": \"").append(endDate).append('"');
+		}
+		payload.append("\n}");
+
 		MvcResult result = mockMvc.perform(post("/api/v1/journeys")
 						.header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
 						.contentType(MediaType.APPLICATION_JSON)
-						.content("""
-								{
-								  "title": "%s"
-								}
-								""".formatted(title)))
+						.content(payload.toString()))
 				.andExpect(status().isCreated())
 				.andReturn();
 		return objectMapper.readTree(result.getResponse().getContentAsString()).get("id").asLong();
