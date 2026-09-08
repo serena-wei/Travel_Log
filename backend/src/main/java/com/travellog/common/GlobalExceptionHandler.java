@@ -28,6 +28,17 @@ public class GlobalExceptionHandler {
 						details));
 	}
 
+	@ExceptionHandler(ValidationException.class)
+	public ResponseEntity<ApiError> handleValidationBusiness(ValidationException ex) {
+		return ResponseEntity.badRequest()
+				.body(ApiError.of(
+						HttpStatus.BAD_REQUEST.value(),
+						"Bad Request",
+						ex.getCode(),
+						ex.getMessage(),
+						ex.getDetails()));
+	}
+
 	@ExceptionHandler(ConflictException.class)
 	public ResponseEntity<ApiError> handleConflict(ConflictException ex) {
 		return ResponseEntity.status(HttpStatus.CONFLICT)

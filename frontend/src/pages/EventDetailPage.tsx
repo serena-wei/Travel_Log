@@ -2,10 +2,15 @@ import { useEffect, useState } from 'react'
 import type { FormEvent } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { ApiError, deleteEvent, getEvent, updateEvent } from '../api/client'
+import { ApiError, deleteEvent, getEvent, getJourney, updateEvent } from '../api/client'
 import { queryKeys } from '../api/queryKeys'
 import { useAuth } from '../auth/useAuth'
-import { toDatetimeLocalValue } from './datetimeLocal'
+import {
+  datePart,
+  journeyDateTimeMax,
+  journeyDateTimeMin,
+  toDatetimeLocalValue,
+} from './datetimeLocal'
 
 type FieldErrors = Partial<Record<'title' | 'startAt' | 'endAt', string>>
 
@@ -36,6 +41,15 @@ export function EventDetailPage() {
     queryFn: () => getEvent(accessToken!, journeyId, eventId),
     enabled: Boolean(accessToken) && !invalidIds,
   })
+
+  const journeyQuery = useQuery({
+    queryKey: queryKeys.journeys.detail(journeyId),
+    queryFn: () => getJourney(accessToken!, journeyId),
+    enabled: Boolean(accessToken) && !invalidIds,
+  })
+
+  const journeyMin = journeyDateTimeMin(journeyQuery.data?.startDate)
+  const journeyMax = journeyDateTimeMax(journeyQuery.data?.endDate)
 
   useEffect(() => {
     if (!eventQuery.data || isFormReady) {
@@ -113,6 +127,20 @@ export function EventDetailPage() {
     if (startAt && endAt && endAt < startAt) {
       localErrors.endAt = 'End must be on or after start'
     }
+    const journeyStart = journeyQuery.data?.startDate
+    const journeyEnd = journeyQuery.data?.endDate
+    if (startAt && journeyStart && datePart(startAt) < journeyStart) {
+      localErrors.startAt = 'Must be on or after the journey start date'
+    }
+    if (startAt && journeyEnd && datePart(startAt) > journeyEnd) {
+      localErrors.startAt = 'Must be on or before the journey end date'
+    }
+    if (endAt && journeyStart && datePart(endAt) < journeyStart) {
+      localErrors.endAt = 'Must be on or after the journey start date'
+    }
+    if (endAt && journeyEnd && datePart(endAt) > journeyEnd) {
+      localErrors.endAt = 'Must be on or before the journey end date'
+    }
     if (Object.keys(localErrors).length > 0) {
       setFieldErrors(localErrors)
       setFormError(null)
@@ -133,6 +161,12 @@ export function EventDetailPage() {
     logout()
     void navigate('/', { replace: true })
   }
+
+  const startMaxCandidates = [endAt || undefined, journeyMax].filter(Boolean) as string[]
+  const startMax = startMaxCandidates.length > 0 ? startMaxCandidates.sort()[0] : undefined
+  const endMinCandidates = [startAt || undefined, journeyMin].filter(Boolean) as string[]
+  const endMin =
+    endMinCandidates.length > 0 ? endMinCandidates.sort().at(-1) : undefined
 
   return (
     <div className="min-h-svh bg-[var(--color-fog)]">
@@ -227,7 +261,8 @@ export function EventDetailPage() {
                   label="Start"
                   type="datetime-local"
                   value={startAt}
-                  max={endAt || undefined}
+                  min={journeyMin}
+                  max={startMax}
                   error={fieldErrors.startAt}
                   onChange={(value) => {
                     setStartAt(value)
@@ -240,7 +275,8 @@ export function EventDetailPage() {
                   label="End"
                   type="datetime-local"
                   value={endAt}
-                  min={startAt || undefined}
+                  min={endMin}
+                  max={journeyMax}
                   error={fieldErrors.endAt}
                   onChange={setEndAt}
                 />

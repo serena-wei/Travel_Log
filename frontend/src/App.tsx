@@ -5,6 +5,7 @@ import { EventDetailPage } from './pages/EventDetailPage'
 import { HomePage } from './pages/HomePage'
 import { JourneyCreatePage } from './pages/JourneyCreatePage'
 import { JourneyDetailPage } from './pages/JourneyDetailPage'
+import { JourneyEditPage } from './pages/JourneyEditPage'
 import { JourneysPage } from './pages/JourneysPage'
 import { LoginPage } from './pages/LoginPage'
 import { RegisterPage } from './pages/RegisterPage'
@@ -44,6 +45,14 @@ export default function App() {
         element={
           <RequireAuth>
             <EventDetailPage />
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/journeys/:id/edit"
+        element={
+          <RequireAuth>
+            <JourneyEditPage />
           </RequireAuth>
         }
       />

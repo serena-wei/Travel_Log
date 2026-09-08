@@ -1,9 +1,9 @@
-import { render, screen } from '@testing-library/react'
+import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { fetchCurrentUser, listJourneys, type JourneyResponse } from '../api/client'
+import { fetchCurrentUser, deleteJourney, listJourneys, type JourneyResponse } from '../api/client'
 import { AuthProvider } from '../auth/AuthContext'
 import { RequireAuth } from '../auth/RequireAuth'
 import { clearAccessToken, setAccessToken } from '../auth/token'
@@ -17,6 +17,7 @@ vi.mock('../api/client', async () => {
     ...actual,
     fetchCurrentUser: vi.fn(),
     listJourneys: vi.fn(),
+    deleteJourney: vi.fn(),
     createJourney: vi.fn(),
     loginUser: vi.fn(),
   }
@@ -24,6 +25,7 @@ vi.mock('../api/client', async () => {
 
 const mockedFetchCurrentUser = vi.mocked(fetchCurrentUser)
 const mockedListJourneys = vi.mocked(listJourneys)
+const mockedDeleteJourney = vi.mocked(deleteJourney)
 
 const alice = {
   id: 1,
@@ -75,6 +77,8 @@ function renderJourneys(initialPath = '/journeys') {
                 </RequireAuth>
               }
             />
+            <Route path="/journeys/:id/edit" element={<div>Edit journey page</div>} />
+            <Route path="/journeys/:id" element={<div>Journey detail page</div>} />
           </Routes>
         </AuthProvider>
       </MemoryRouter>
@@ -86,7 +90,9 @@ describe('JourneysPage', () => {
   beforeEach(() => {
     mockedFetchCurrentUser.mockReset()
     mockedListJourneys.mockReset()
+    mockedDeleteJourney.mockReset()
     clearAccessToken()
+    vi.spyOn(window, 'confirm').mockReturnValue(true)
   })
 
   it('redirects unauthenticated users to login', async () => {
@@ -120,5 +126,27 @@ describe('JourneysPage', () => {
     await user.click(screen.getByRole('link', { name: 'New journey' }))
 
     expect(await screen.findByRole('heading', { name: 'Create a trip' })).toBeInTheDocument()
+  })
+
+  it('opens detail from the title and supports edit and delete actions', async () => {
+    const user = userEvent.setup()
+    setAccessToken('token-123')
+    mockedFetchCurrentUser.mockResolvedValue(alice)
+    mockedListJourneys.mockResolvedValue([sampleJourney])
+    mockedDeleteJourney.mockResolvedValue()
+
+    renderJourneys()
+
+    expect(await screen.findByText('South Island')).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: /South Island/i })).toHaveAttribute(
+      'href',
+      '/journeys/10',
+    )
+    expect(screen.getByRole('link', { name: 'Edit' })).toHaveAttribute('href', '/journeys/10/edit')
+
+    await user.click(screen.getByRole('button', { name: 'Delete' }))
+    await waitFor(() => {
+      expect(mockedDeleteJourney).toHaveBeenCalledWith('token-123', 10)
+    })
   })
 })

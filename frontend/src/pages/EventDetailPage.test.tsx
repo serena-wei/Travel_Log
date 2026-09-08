@@ -22,6 +22,16 @@ vi.mock('../api/client', async () => {
     ...actual,
     fetchCurrentUser: vi.fn(),
     getEvent: vi.fn(),
+    getJourney: vi.fn().mockResolvedValue({
+      id: 10,
+      title: 'South Island',
+      description: null,
+      startDate: null,
+      endDate: null,
+      visibility: 'PRIVATE',
+      createdAt: '2026-09-07T00:00:00Z',
+      updatedAt: '2026-09-07T00:00:00Z',
+    }),
     updateEvent: vi.fn(),
     deleteEvent: vi.fn(),
   }

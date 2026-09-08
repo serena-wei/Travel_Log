@@ -1,6 +1,10 @@
 package com.travellog.event;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -8,6 +12,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.travellog.common.ApiMessages;
 import com.travellog.common.ErrorCode;
 import com.travellog.common.NotFoundException;
+import com.travellog.common.ValidationException;
 import com.travellog.journey.Journey;
 import com.travellog.journey.JourneyRepository;
 
@@ -25,6 +30,7 @@ public class EventService {
 	@Transactional
 	public EventResponse createForCurrentUser(Long userId, Long journeyId, CreateEventRequest request) {
 		Journey journey = requireOwnedJourney(userId, journeyId);
+		validateWithinJourney(journey, request.getStartAt(), request.getEndAt());
 		Event event = new Event();
 		event.setJourney(journey);
 		assignEditableFields(event, request.getTitle(), request.getDescription(), request.getStartAt(), request.getEndAt());
@@ -51,7 +57,8 @@ public class EventService {
 			Long journeyId,
 			Long eventId,
 			UpdateEventRequest request) {
-		requireOwnedJourney(userId, journeyId);
+		Journey journey = requireOwnedJourney(userId, journeyId);
+		validateWithinJourney(journey, request.getStartAt(), request.getEndAt());
 		Event event = requireEventInJourney(eventId, journeyId);
 		assignEditableFields(event, request.getTitle(), request.getDescription(), request.getStartAt(), request.getEndAt());
 		return EventResponse.from(eventRepository.save(event));
@@ -74,12 +81,41 @@ public class EventService {
 				.orElseThrow(() -> new NotFoundException(ErrorCode.EVENT_NOT_FOUND, ApiMessages.EVENT_NOT_FOUND));
 	}
 
+	private static void validateWithinJourney(Journey journey, LocalDateTime startAt, LocalDateTime endAt) {
+		LocalDate journeyStart = journey.getStartDate();
+		LocalDate journeyEnd = journey.getEndDate();
+		Map<String, String> details = new LinkedHashMap<>();
+
+		putDateBoundErrors(details, "startAt", startAt.toLocalDate(), journeyStart, journeyEnd);
+		if (endAt != null) {
+			putDateBoundErrors(details, "endAt", endAt.toLocalDate(), journeyStart, journeyEnd);
+		}
+
+		if (!details.isEmpty()) {
+			throw new ValidationException(ErrorCode.VALIDATION_FAILED, ApiMessages.VALIDATION_FAILED, details);
+		}
+	}
+
+	private static void putDateBoundErrors(
+			Map<String, String> details,
+			String field,
+			LocalDate eventDate,
+			LocalDate journeyStart,
+			LocalDate journeyEnd) {
+		if (journeyStart != null && eventDate.isBefore(journeyStart)) {
+			details.put(field, ApiMessages.EVENT_BEFORE_JOURNEY_START);
+		}
+		if (journeyEnd != null && eventDate.isAfter(journeyEnd)) {
+			details.put(field, ApiMessages.EVENT_AFTER_JOURNEY_END);
+		}
+	}
+
 	private static void assignEditableFields(
 			Event event,
 			String title,
 			String description,
-			java.time.LocalDateTime startAt,
-			java.time.LocalDateTime endAt) {
+			LocalDateTime startAt,
+			LocalDateTime endAt) {
 		event.setTitle(title.trim());
 		event.setDescription(trimToNull(description));
 		event.setStartAt(startAt);

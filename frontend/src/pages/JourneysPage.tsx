@@ -1,11 +1,12 @@
 import { Link, useNavigate } from 'react-router-dom'
-import { useQuery } from '@tanstack/react-query'
-import { ApiError, listJourneys } from '../api/client'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { ApiError, deleteJourney, listJourneys } from '../api/client'
 import { queryKeys } from '../api/queryKeys'
 import { useAuth } from '../auth/useAuth'
 
 export function JourneysPage() {
   const navigate = useNavigate()
+  const queryClient = useQueryClient()
   const { user, accessToken, logout } = useAuth()
 
   const journeysQuery = useQuery({
@@ -14,9 +15,25 @@ export function JourneysPage() {
     enabled: Boolean(accessToken),
   })
 
+  const deleteMutation = useMutation({
+    mutationFn: (journeyId: number) => deleteJourney(accessToken!, journeyId),
+    onSuccess: async (_void, journeyId) => {
+      await queryClient.invalidateQueries({ queryKey: queryKeys.journeys.all })
+      queryClient.removeQueries({ queryKey: queryKeys.journeys.detail(journeyId) })
+      queryClient.removeQueries({ queryKey: queryKeys.events.all(journeyId) })
+    },
+  })
+
   function handleLogout() {
     logout()
     void navigate('/', { replace: true })
+  }
+
+  function handleDelete(journeyId: number, title: string) {
+    if (!window.confirm(`Delete “${title}”? This cannot be undone.`)) {
+      return
+    }
+    deleteMutation.mutate(journeyId)
   }
 
   return (
@@ -54,7 +71,7 @@ export function JourneysPage() {
               Journeys
             </h1>
             <p className="mt-3 max-w-xl font-light text-[var(--color-stone)]">
-              Open a trip anytime to update the story.
+              Open a trip to see its timeline, or edit details anytime.
             </p>
           </div>
           <Link
@@ -78,6 +95,14 @@ export function JourneysPage() {
             </p>
           )}
 
+          {deleteMutation.isError && (
+            <p role="alert" className="mb-4 text-sm text-[var(--color-danger)]">
+              {deleteMutation.error instanceof ApiError
+                ? deleteMutation.error.message
+                : 'Unable to delete journey right now.'}
+            </p>
+          )}
+
           {journeysQuery.data && journeysQuery.data.length === 0 && (
             <p className="text-sm font-light text-[var(--color-stone)]">
               No journeys yet.{' '}
@@ -94,28 +119,47 @@ export function JourneysPage() {
           {journeysQuery.data && journeysQuery.data.length > 0 && (
             <ul className="divide-y divide-[var(--color-line)] border-y border-[var(--color-line)]">
               {journeysQuery.data.map((journey) => (
-                <li key={journey.id}>
+                <li
+                  key={journey.id}
+                  className="flex flex-col gap-3 py-5 sm:flex-row sm:items-center sm:justify-between sm:gap-6"
+                >
                   <Link
                     to={`/journeys/${journey.id}`}
-                    className="flex flex-col gap-1 py-5 transition hover:bg-white/70 sm:flex-row sm:items-baseline sm:justify-between sm:gap-6"
+                    className="min-w-0 flex-1 transition hover:opacity-80"
                   >
-                    <div>
-                      <p className="font-[family-name:var(--font-display)] text-2xl font-medium tracking-wide text-[var(--color-ink)]">
-                        {journey.title}
+                    <p className="font-[family-name:var(--font-display)] text-2xl font-medium tracking-wide text-[var(--color-ink)]">
+                      {journey.title}
+                    </p>
+                    {journey.description && (
+                      <p className="mt-1 max-w-2xl text-sm font-light text-[var(--color-stone)] line-clamp-2">
+                        {journey.description}
                       </p>
-                      {journey.description && (
-                        <p className="mt-1 max-w-2xl text-sm font-light text-[var(--color-stone)] line-clamp-2">
-                          {journey.description}
-                        </p>
-                      )}
-                    </div>
-                    <div className="shrink-0 text-[11px] tracking-[0.16em] text-[var(--color-stone)] uppercase">
+                    )}
+                    <div className="mt-2 text-[11px] tracking-[0.16em] text-[var(--color-stone)] uppercase">
                       <span>{journey.visibility === 'PRIVATE' ? 'Private' : 'Public'}</span>
                       {formatDateRange(journey.startDate, journey.endDate) && (
-                        <span className="ml-3">{formatDateRange(journey.startDate, journey.endDate)}</span>
+                        <span className="ml-3">
+                          {formatDateRange(journey.startDate, journey.endDate)}
+                        </span>
                       )}
                     </div>
                   </Link>
+                  <div className="flex shrink-0 items-center gap-3">
+                    <Link
+                      to={`/journeys/${journey.id}/edit`}
+                      className="border border-[var(--color-line)] px-4 py-2 text-[11px] font-medium tracking-[0.2em] text-[var(--color-ink)] uppercase transition hover:border-[var(--color-sea)]"
+                    >
+                      Edit
+                    </Link>
+                    <button
+                      type="button"
+                      onClick={() => handleDelete(journey.id, journey.title)}
+                      disabled={deleteMutation.isPending}
+                      className="border border-[var(--color-danger)] px-4 py-2 text-[11px] font-medium tracking-[0.2em] text-[var(--color-danger)] uppercase transition hover:bg-[color-mix(in_srgb,var(--color-danger)_8%,white)] disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      Delete
+                    </button>
+                  </div>
                 </li>
               ))}
             </ul>
