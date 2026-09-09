@@ -119,6 +119,7 @@ describe('JourneyDetailPage', () => {
         description: null,
         startAt: '2026-03-01T09:00:00',
         endAt: null,
+        photos: [],
         createdAt: '2026-09-08T00:00:00Z',
         updatedAt: '2026-09-08T00:00:00Z',
       },
@@ -131,7 +132,12 @@ describe('JourneyDetailPage', () => {
     expect(screen.queryByLabelText(/Title/i)).not.toBeInTheDocument()
     expect(screen.getByRole('heading', { name: 'Events' })).toBeInTheDocument()
     expect(screen.getByText('Flight NZ5373')).toBeInTheDocument()
-    expect(screen.getByRole('link', { name: 'Edit' })).toHaveAttribute('href', '/journeys/10/edit')
+    expect(screen.getByRole('link', { name: '← Journeys' })).toHaveAttribute('href', '/journeys')
+    expect(screen.getByRole('link', { name: 'Edit' })).toHaveAttribute(
+      'href',
+      '/journeys/10/events/5/edit',
+    )
+    expect(screen.getByRole('button', { name: 'Delete' })).toBeInTheDocument()
   })
 
   it('signs out then logs in to the journeys list, not the detail page', async () => {

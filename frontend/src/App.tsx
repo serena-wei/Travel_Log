@@ -2,6 +2,7 @@ import { Route, Routes } from 'react-router-dom'
 import { RequireAuth } from './auth/RequireAuth'
 import { EventCreatePage } from './pages/EventCreatePage'
 import { EventDetailPage } from './pages/EventDetailPage'
+import { EventEditPage } from './pages/EventEditPage'
 import { HomePage } from './pages/HomePage'
 import { JourneyCreatePage } from './pages/JourneyCreatePage'
 import { JourneyDetailPage } from './pages/JourneyDetailPage'
@@ -37,6 +38,14 @@ export default function App() {
         element={
           <RequireAuth>
             <EventCreatePage />
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/journeys/:journeyId/events/:eventId/edit"
+        element={
+          <RequireAuth>
+            <EventEditPage />
           </RequireAuth>
         }
       />

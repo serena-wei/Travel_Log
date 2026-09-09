@@ -55,7 +55,8 @@ If port `5432` is already taken by a local Postgres, stop that service or change
 | `/journeys/:id` | Read-only journey + events timeline |
 | `/journeys/:id/edit` | Edit journey details |
 | `/journeys/:journeyId/events/new` | Create event |
-| `/journeys/:journeyId/events/:eventId` | Edit / delete event |
+| `/journeys/:journeyId/events/:eventId` | Read-only event + photos |
+| `/journeys/:journeyId/events/:eventId/edit` | Edit event details |
 
 ### API (v1)
 
@@ -69,8 +70,22 @@ If port `5432` is already taken by a local Postgres, stop that service or change
 | `GET/PUT/DELETE` | `/api/v1/journeys/{id}` | Bearer (owner only) |
 | `GET/POST` | `/api/v1/journeys/{journeyId}/events` | Bearer (journey owner) |
 | `GET/PUT/DELETE` | `/api/v1/journeys/{journeyId}/events/{eventId}` | Bearer (journey owner) |
+| `POST` | `/api/v1/journeys/{journeyId}/events/{eventId}/photos/presign` | Bearer (journey owner) |
 
-Journeys default to `PRIVATE`. Missing or non-owned journeys return `404` with `JOURNEY_NOT_FOUND`. Events are text-only for now (title, description, start/end time); missing events return `EVENT_NOT_FOUND`. Location and photos come in later PRs.
+Journeys default to `PRIVATE`. Missing or non-owned journeys return `404` with `JOURNEY_NOT_FOUND`. Events include title, description, start/end time, and up to **10 photos** (JPEG/PNG/WebP, 5MB each) via S3 presigned upload. Missing events return `EVENT_NOT_FOUND`. Photo edit/delete UI comes later.
+
+### S3 photos (local)
+
+Export before starting the backend (values from your IAM user / bucket):
+
+```bash
+export TRAVELLOG_S3_BUCKET=travellog-photos-serena
+export TRAVELLOG_S3_REGION=ap-southeast-2
+export AWS_ACCESS_KEY_ID=...
+export AWS_SECRET_ACCESS_KEY=...
+```
+
+Without `TRAVELLOG_S3_BUCKET`, the API still starts and uses a fake storage stub (CI-safe); browser uploads to real S3 need the exports above plus bucket CORS for `http://localhost:5173`.
 
 ### Auth examples
 
@@ -135,8 +150,8 @@ docker-compose.yml
 ## Phase roadmap
 
 1. **Phase 1** — engineering skeleton, health check, CI *(done)*
-2. **Phase 2** — JWT auth + journey/event CRUD (API + UI) *(done)*; journey detail UX polish *(in progress)*; location + photos next
-3. **Phase 3** — AWS (RDS, S3, deploy), richer tests
+2. **Phase 2** — JWT auth + journey/event CRUD (API + UI) *(done)*; event photo upload to S3 *(in progress)*
+3. **Phase 3** — AWS deploy (RDS, app host), richer tests; photo edit/delete polish
 4. **Phase 4** — polish for resume / demo
 
 ## License

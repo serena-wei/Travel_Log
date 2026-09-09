@@ -1,15 +1,8 @@
-import { render, screen, waitFor } from '@testing-library/react'
-import userEvent from '@testing-library/user-event'
+import { render, screen } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import {
-  deleteEvent,
-  fetchCurrentUser,
-  getEvent,
-  updateEvent,
-  type EventResponse,
-} from '../api/client'
+import { fetchCurrentUser, getEvent, type EventResponse } from '../api/client'
 import { AuthProvider } from '../auth/AuthContext'
 import { clearIntentionalLogout } from '../auth/intentionalLogout'
 import { RequireAuth } from '../auth/RequireAuth'
@@ -22,25 +15,11 @@ vi.mock('../api/client', async () => {
     ...actual,
     fetchCurrentUser: vi.fn(),
     getEvent: vi.fn(),
-    getJourney: vi.fn().mockResolvedValue({
-      id: 10,
-      title: 'South Island',
-      description: null,
-      startDate: null,
-      endDate: null,
-      visibility: 'PRIVATE',
-      createdAt: '2026-09-07T00:00:00Z',
-      updatedAt: '2026-09-07T00:00:00Z',
-    }),
-    updateEvent: vi.fn(),
-    deleteEvent: vi.fn(),
   }
 })
 
 const mockedFetchCurrentUser = vi.mocked(fetchCurrentUser)
 const mockedGetEvent = vi.mocked(getEvent)
-const mockedUpdateEvent = vi.mocked(updateEvent)
-const mockedDeleteEvent = vi.mocked(deleteEvent)
 
 const alice = {
   id: 1,
@@ -61,6 +40,7 @@ const sampleEvent: EventResponse = {
   description: 'Wellington to Christchurch',
   startAt: '2026-03-01T09:00:00',
   endAt: '2026-03-01T10:20:00',
+  photos: [],
   createdAt: '2026-09-08T00:00:00Z',
   updatedAt: '2026-09-08T00:00:00Z',
 }
@@ -83,7 +63,6 @@ function renderDetail() {
                 </RequireAuth>
               }
             />
-            <Route path="/journeys/:id" element={<div>Journey detail</div>} />
           </Routes>
         </AuthProvider>
       </MemoryRouter>
@@ -95,59 +74,20 @@ describe('EventDetailPage', () => {
   beforeEach(() => {
     mockedFetchCurrentUser.mockReset()
     mockedGetEvent.mockReset()
-    mockedUpdateEvent.mockReset()
-    mockedDeleteEvent.mockReset()
     clearAccessToken()
     clearIntentionalLogout()
-    vi.spyOn(window, 'confirm').mockReturnValue(true)
   })
 
-  it('loads and saves event edits', async () => {
-    const user = userEvent.setup()
+  it('shows a read-only event with edit link', async () => {
     setAccessToken('token-123')
     mockedFetchCurrentUser.mockResolvedValue(alice)
     mockedGetEvent.mockResolvedValue(sampleEvent)
-    mockedUpdateEvent.mockResolvedValue({
-      ...sampleEvent,
-      title: 'Flight Updated',
-      description: 'Updated notes',
-    })
 
     renderDetail()
 
-    expect(await screen.findByDisplayValue('Flight NZ5373')).toBeInTheDocument()
-    await user.clear(screen.getByLabelText(/Title/i))
-    await user.type(screen.getByLabelText(/Title/i), 'Flight Updated')
-    await user.clear(screen.getByLabelText(/^Description/i))
-    await user.type(screen.getByLabelText(/^Description/i), 'Updated notes')
-    await user.click(screen.getByRole('button', { name: 'Save changes' }))
-
-    await waitFor(() => {
-      expect(mockedUpdateEvent).toHaveBeenCalledWith('token-123', 10, 5, {
-        title: 'Flight Updated',
-        description: 'Updated notes',
-        startAt: '2026-03-01T09:00',
-        endAt: '2026-03-01T10:20',
-      })
-    })
-    expect(await screen.findByRole('status')).toHaveTextContent('Saved')
-  })
-
-  it('deletes an event and returns to the journey', async () => {
-    const user = userEvent.setup()
-    setAccessToken('token-123')
-    mockedFetchCurrentUser.mockResolvedValue(alice)
-    mockedGetEvent.mockResolvedValue(sampleEvent)
-    mockedDeleteEvent.mockResolvedValue()
-
-    renderDetail()
-
-    expect(await screen.findByDisplayValue('Flight NZ5373')).toBeInTheDocument()
-    await user.click(screen.getByRole('button', { name: 'Delete' }))
-
-    await waitFor(() => {
-      expect(mockedDeleteEvent).toHaveBeenCalledWith('token-123', 10, 5)
-    })
-    expect(await screen.findByText('Journey detail')).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: 'Flight NZ5373' })).toBeInTheDocument()
+    expect(screen.getByText('Wellington to Christchurch')).toBeInTheDocument()
+    expect(screen.queryByLabelText(/Title/i)).not.toBeInTheDocument()
+    expect(screen.getByRole('link', { name: '← Journey' })).toHaveAttribute('href', '/journeys/10')
   })
 })

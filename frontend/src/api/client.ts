@@ -223,6 +223,15 @@ export async function deleteJourney(accessToken: string, id: number): Promise<vo
   }
 }
 
+export type EventPhotoResponse = {
+  id: number
+  url: string
+  contentType: string
+  sizeBytes: number
+  sortOrder: number
+  createdAt: string
+}
+
 export type EventResponse = {
   id: number
   journeyId: number
@@ -230,6 +239,7 @@ export type EventResponse = {
   description: string | null
   startAt: string
   endAt: string | null
+  photos: EventPhotoResponse[]
   createdAt: string
   updatedAt: string
 }
@@ -240,6 +250,24 @@ export type SaveEventRequest = {
   startAt: string
   endAt?: string | null
 }
+
+export type PresignPhotoRequest = {
+  contentType: string
+  sizeBytes: number
+  fileName?: string
+}
+
+export type PresignPhotoResponse = {
+  photoId: number
+  uploadUrl: string
+  objectKey: string
+  contentType: string
+  sortOrder: number
+}
+
+export const MAX_EVENT_PHOTOS = 10
+export const MAX_EVENT_PHOTO_BYTES = 5 * 1024 * 1024
+export const ALLOWED_EVENT_PHOTO_TYPES = ['image/jpeg', 'image/png', 'image/webp'] as const
 
 export async function listEvents(
   accessToken: string,
@@ -322,4 +350,47 @@ export async function deleteEvent(
   if (!response.ok) {
     throw await parseApiError(response)
   }
+}
+
+export async function presignEventPhoto(
+  accessToken: string,
+  journeyId: number,
+  eventId: number,
+  request: PresignPhotoRequest,
+): Promise<PresignPhotoResponse> {
+  const response = await fetch(
+    `${API_BASE_URL}${API_V1}/journeys/${journeyId}/events/${eventId}/photos/presign`,
+    {
+      method: 'POST',
+      headers: authJsonHeaders(accessToken),
+      body: JSON.stringify(request),
+    },
+  )
+  if (!response.ok) {
+    throw await parseApiError(response)
+  }
+  return response.json() as Promise<PresignPhotoResponse>
+}
+
+export async function uploadEventPhoto(
+  accessToken: string,
+  journeyId: number,
+  eventId: number,
+  file: File,
+): Promise<PresignPhotoResponse> {
+  const contentType = file.type || 'image/jpeg'
+  const presigned = await presignEventPhoto(accessToken, journeyId, eventId, {
+    contentType,
+    sizeBytes: file.size,
+    fileName: file.name,
+  })
+  const uploadResponse = await fetch(presigned.uploadUrl, {
+    method: 'PUT',
+    headers: { 'Content-Type': contentType },
+    body: file,
+  })
+  if (!uploadResponse.ok) {
+    throw new Error(`Photo upload failed (${uploadResponse.status})`)
+  }
+  return presigned
 }
