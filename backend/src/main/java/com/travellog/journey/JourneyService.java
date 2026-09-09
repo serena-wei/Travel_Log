@@ -9,6 +9,7 @@ import com.travellog.common.ApiMessages;
 import com.travellog.common.ErrorCode;
 import com.travellog.common.NotFoundException;
 import com.travellog.common.UnauthorizedException;
+import com.travellog.event.EventPhotoService;
 import com.travellog.user.User;
 import com.travellog.user.UserRepository;
 
@@ -17,10 +18,15 @@ public class JourneyService {
 
 	private final JourneyRepository journeyRepository;
 	private final UserRepository userRepository;
+	private final EventPhotoService eventPhotoService;
 
-	public JourneyService(JourneyRepository journeyRepository, UserRepository userRepository) {
+	public JourneyService(
+			JourneyRepository journeyRepository,
+			UserRepository userRepository,
+			EventPhotoService eventPhotoService) {
 		this.journeyRepository = journeyRepository;
 		this.userRepository = userRepository;
+		this.eventPhotoService = eventPhotoService;
 	}
 
 	@Transactional
@@ -71,6 +77,7 @@ public class JourneyService {
 	public void deleteForCurrentUser(Long userId, Long journeyId) {
 		Journey journey = journeyRepository.findByIdAndUserId(journeyId, userId)
 				.orElseThrow(() -> new NotFoundException(ErrorCode.JOURNEY_NOT_FOUND, ApiMessages.JOURNEY_NOT_FOUND));
+		eventPhotoService.deleteStorageForJourney(journeyId);
 		journeyRepository.delete(journey);
 	}
 

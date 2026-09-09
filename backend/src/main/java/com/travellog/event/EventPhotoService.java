@@ -165,6 +165,14 @@ public class EventPhotoService {
 		}
 	}
 
+	/** Deletes S3 objects for every photo under the journey. Call before cascading DB delete. */
+	@Transactional
+	public void deleteStorageForJourney(Long journeyId) {
+		for (String objectKey : eventPhotoRepository.findObjectKeysByJourneyId(journeyId)) {
+			objectStorage.deleteObject(objectKey);
+		}
+	}
+
 	/** Compact remaining photos to contiguous sortOrder values 0..n-1 after a delete. */
 	private void resequenceSortOrders(Long eventId) {
 		List<EventPhoto> remaining = eventPhotoRepository.findByEventIdOrderBySortOrderAscIdAsc(eventId);

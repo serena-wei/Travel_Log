@@ -1,8 +1,13 @@
 package com.travellog.storage;
 
 import java.time.Duration;
+import java.util.Collections;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class FakeObjectStorage implements ObjectStorage, AutoCloseable {
+
+	private final Set<String> deletedObjectKeys = ConcurrentHashMap.newKeySet();
 
 	@Override
 	public String createUploadUrl(String objectKey, String contentType, Duration expiry) {
@@ -16,7 +21,15 @@ public class FakeObjectStorage implements ObjectStorage, AutoCloseable {
 
 	@Override
 	public void deleteObject(String objectKey) {
-		// no-op
+		deletedObjectKeys.add(objectKey);
+	}
+
+	public Set<String> getDeletedObjectKeys() {
+		return Collections.unmodifiableSet(deletedObjectKeys);
+	}
+
+	public void clearDeletedObjectKeys() {
+		deletedObjectKeys.clear();
 	}
 
 	@Override
