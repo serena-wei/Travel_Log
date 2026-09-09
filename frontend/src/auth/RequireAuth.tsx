@@ -19,7 +19,7 @@ export function RequireAuth({ children }: { children: ReactNode }) {
 
   if (!user || !accessToken) {
     if (isIntentionalLogout()) {
-      return <Navigate to="/login" replace />
+      return <Navigate to="/" replace />
     }
     return <Navigate to="/login" replace state={{ from: location.pathname }} />
   }

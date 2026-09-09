@@ -81,14 +81,14 @@ const sampleEvent: EventResponse = {
   updatedAt: '2026-09-08T00:00:00Z',
 }
 
-function renderEdit() {
+function renderEdit(initialEntry: string | { pathname: string; state?: object } = '/journeys/10/events/5/edit') {
   const client = new QueryClient({
     defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
   })
 
   return render(
     <QueryClientProvider client={client}>
-      <MemoryRouter initialEntries={['/journeys/10/events/5/edit']}>
+      <MemoryRouter initialEntries={[initialEntry]}>
         <AuthProvider>
           <Routes>
             <Route
@@ -175,6 +175,26 @@ describe('EventEditPage', () => {
     await waitFor(() => {
       expect(mockedReplaceEventPhoto).toHaveBeenCalledWith('token-123', 10, 5, 9, file)
     })
+  })
+
+  it('shows a warning when opened after create photo upload failed', async () => {
+    setAccessToken('token-123')
+    mockedFetchCurrentUser.mockResolvedValue(alice)
+    mockedGetEvent.mockResolvedValue({ ...sampleEvent, photos: [] })
+
+    renderEdit({
+      pathname: '/journeys/10/events/5/edit',
+      state: {
+        eventPhotoUploadWarning:
+          'Event created, but photos could not be uploaded. You can add them on the edit page.',
+      },
+    })
+
+    expect(
+      await screen.findByText(
+        'Event created, but photos could not be uploaded. You can add them on the edit page.',
+      ),
+    ).toBeInTheDocument()
   })
 
   it('adds photos to an event that has none', async () => {
