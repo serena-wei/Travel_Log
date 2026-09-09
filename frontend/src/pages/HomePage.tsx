@@ -1,7 +1,4 @@
 import { Link } from 'react-router-dom'
-import { useQuery } from '@tanstack/react-query'
-import { fetchHealth } from '../api/client'
-import { queryKeys } from '../api/queryKeys'
 import { useAuth } from '../auth/useAuth'
 
 const HERO_IMAGE =
@@ -9,13 +6,9 @@ const HERO_IMAGE =
 
 export function HomePage() {
   const { user, isBootstrapping, logout } = useAuth()
-  const healthQuery = useQuery({
-    queryKey: queryKeys.health,
-    queryFn: fetchHealth,
-  })
 
   return (
-    <div className="min-h-screen bg-[var(--color-fog)]">
+    <div className="min-h-screen overflow-hidden bg-[var(--color-fog)]">
       <section className="relative isolate min-h-screen overflow-hidden text-white">
         <img
           src={HERO_IMAGE}
@@ -46,20 +39,12 @@ export function HomePage() {
                   </button>
                 </>
               ) : (
-                <>
-                  <Link
-                    to="/login"
-                    className="border border-white/55 bg-white/12 px-5 py-2.5 text-[11px] font-medium tracking-[0.22em] text-white uppercase backdrop-blur-[2px] transition hover:border-white hover:bg-white/22"
-                  >
-                    Sign in
-                  </Link>
-                  <Link
-                    to="/register"
-                    className="hidden border border-white/55 bg-white/12 px-5 py-2.5 text-[11px] font-medium tracking-[0.22em] text-white uppercase backdrop-blur-[2px] transition hover:border-white hover:bg-white/22 sm:inline-flex"
-                  >
-                    Join
-                  </Link>
-                </>
+                <Link
+                  to="/login"
+                  className="border border-white/55 bg-white/12 px-5 py-2.5 text-[11px] font-medium tracking-[0.22em] text-white uppercase backdrop-blur-[2px] transition hover:border-white hover:bg-white/22"
+                >
+                  Sign in
+                </Link>
               )}
             </div>
           </header>
@@ -74,7 +59,7 @@ export function HomePage() {
             <p className="animate-fade-up-delay mt-7 max-w-xl text-base font-light tracking-wide text-white/90 sm:text-lg">
               {user
                 ? `Welcome back, ${user.username}. Your private journal is ready when you are.`
-                : 'Keep every journey private by default — share the moments you choose.'}
+                : 'Save your travel memories, share the journeys you love, and connect with a community of travellers.'}
             </p>
             <div className="animate-fade-up-delay-2 mt-11 flex flex-wrap items-center gap-4">
               {user ? (
@@ -87,16 +72,16 @@ export function HomePage() {
               ) : (
                 <>
                   <Link
-                    to="/login"
+                    to="/register"
                     className="bg-white px-7 py-3.5 text-[11px] font-medium tracking-[0.2em] !text-[#10161c] uppercase shadow-[0_8px_30px_rgba(0,0,0,0.12)] transition hover:bg-white/92"
                   >
                     Start your journal
                   </Link>
                   <Link
-                    to="/register"
+                    to="/login"
                     className="border border-white/55 bg-white/8 px-7 py-3.5 text-[11px] font-medium tracking-[0.2em] text-white uppercase backdrop-blur-[2px] transition hover:border-white hover:bg-white/16"
                   >
-                    Create account
+                    Sign in
                   </Link>
                 </>
               )}
@@ -104,50 +89,6 @@ export function HomePage() {
           </div>
         </div>
       </section>
-
-      <section
-        id="private-by-default"
-        className="mx-auto grid max-w-6xl gap-12 px-6 py-24 sm:px-10 lg:grid-cols-[1.05fr_0.95fr] lg:gap-20 lg:px-14 lg:py-32"
-      >
-        <div>
-          <p className="mb-4 text-[11px] font-medium tracking-[0.28em] text-[var(--color-gold)] uppercase">
-            The idea
-          </p>
-          <h2 className="font-[family-name:var(--font-display)] text-4xl font-medium tracking-wide text-[var(--color-ink)] sm:text-5xl">
-            Private by default
-          </h2>
-          <p className="mt-6 max-w-md text-base font-light leading-relaxed text-[var(--color-stone)] sm:text-lg">
-            TravelLog is built for personal notes on the road — your routes, stays, and stories stay yours
-            until you decide otherwise.
-          </p>
-        </div>
-        <div className="flex flex-col justify-center border-t border-[var(--color-line)] pt-10 lg:border-t-0 lg:border-l lg:pt-0 lg:pl-16">
-          <p className="font-[family-name:var(--font-display)] text-2xl font-medium tracking-wide text-[var(--color-ink)] sm:text-3xl">
-            One place for the trip
-          </p>
-          <p className="mt-5 text-base font-light leading-relaxed text-[var(--color-stone)]">
-            Capture the path as you go, then return later to reread the journey without digging through
-            camera rolls and chat threads.
-          </p>
-        </div>
-      </section>
-
-      <footer className="border-t border-[var(--color-line)] px-6 py-7 sm:px-10 lg:px-14">
-        <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 text-sm text-[var(--color-stone)]">
-          <p className="font-[family-name:var(--font-display)] text-lg tracking-[0.14em] text-[var(--color-ink)] uppercase">
-            TravelLog
-          </p>
-          <p aria-live="polite" className="text-xs tracking-[0.16em] uppercase">
-            API{' '}
-            <span className="font-medium text-[var(--color-ink)]">
-              {healthQuery.isLoading && 'checking'}
-              {healthQuery.isError && 'offline'}
-              {healthQuery.data?.status === 'UP' && 'UP'}
-              {healthQuery.data && healthQuery.data.status !== 'UP' && healthQuery.data.status}
-            </span>
-          </p>
-        </div>
-      </footer>
     </div>
   )
 }

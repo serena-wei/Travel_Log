@@ -1,40 +1,30 @@
 import { render, screen } from '@testing-library/react'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { MemoryRouter } from 'react-router-dom'
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import { AuthProvider } from '../auth/AuthContext'
 import { HomePage } from '../pages/HomePage'
 
-vi.mock('../api/client', async () => {
-  const actual = await vi.importActual<typeof import('../api/client')>('../api/client')
-  return {
-    ...actual,
-    fetchHealth: vi.fn().mockResolvedValue({
-      status: 'UP',
-      serviceName: 'TravelLog',
-      timestamp: '2026-09-06T00:00:00Z',
-    }),
-  }
-})
-
 describe('HomePage', () => {
-  it('renders TravelLog brand hero and login CTA', async () => {
-    const client = new QueryClient({
-      defaultOptions: { queries: { retry: false } },
-    })
-
+  it('renders a single-screen hero with register CTA', () => {
     render(
-      <QueryClientProvider client={client}>
-        <MemoryRouter>
-          <AuthProvider>
-            <HomePage />
-          </AuthProvider>
-        </MemoryRouter>
-      </QueryClientProvider>,
+      <MemoryRouter>
+        <AuthProvider>
+          <HomePage />
+        </AuthProvider>
+      </MemoryRouter>,
     )
 
     expect(screen.getByRole('heading', { name: 'TravelLog' })).toBeInTheDocument()
-    expect(screen.getByRole('link', { name: 'Start your journal' })).toHaveAttribute('href', '/login')
-    expect(await screen.findByText('UP')).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Start your journal' })).toHaveAttribute(
+      'href',
+      '/register',
+    )
+    expect(
+      screen.getByText(
+        'Save your travel memories, share the journeys you love, and connect with a community of travellers.',
+      ),
+    ).toBeInTheDocument()
+    expect(screen.queryByRole('heading', { name: 'Your trips, in one place' })).not.toBeInTheDocument()
+    expect(screen.queryByText(/^API$/i)).not.toBeInTheDocument()
   })
 })
