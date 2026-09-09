@@ -159,7 +159,8 @@ describe('JourneyDetailPage', () => {
     await user.click(screen.getByRole('button', { name: 'Sign out' }))
 
     expect(await screen.findByRole('heading', { name: 'TravelLog' })).toBeInTheDocument()
-    await user.click(screen.getByRole('link', { name: 'Sign in' }))
+    const [headerSignIn] = screen.getAllByRole('link', { name: 'Sign in' })
+    await user.click(headerSignIn)
 
     expect(await screen.findByRole('heading', { name: 'Welcome back' })).toBeInTheDocument()
     await user.type(screen.getByLabelText(/Username/i), 'alice')
