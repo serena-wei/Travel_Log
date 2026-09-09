@@ -133,7 +133,10 @@ describe('JourneyDetailPage', () => {
     expect(screen.getByText('Road trip')).toBeInTheDocument()
     expect(screen.queryByLabelText(/Title/i)).not.toBeInTheDocument()
     expect(screen.getByRole('heading', { name: 'Events' })).toBeInTheDocument()
+    expect(screen.getByText('Timeline')).toBeInTheDocument()
     expect(screen.getByText('Flight NZ5373')).toBeInTheDocument()
+    expect(screen.getByText('2026-03-01')).toBeInTheDocument()
+    expect(screen.getByText('09:00')).toBeInTheDocument()
     expect(screen.getByRole('link', { name: '← Journeys' })).toHaveAttribute('href', '/journeys')
     expect(screen.getByRole('link', { name: 'Edit' })).toHaveAttribute(
       'href',
