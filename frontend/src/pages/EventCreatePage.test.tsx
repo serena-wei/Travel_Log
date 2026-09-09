@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { createEvent, fetchCurrentUser } from '../api/client'
+import { createEvent, fetchCurrentUser, uploadEventPhoto } from '../api/client'
 import { AuthProvider } from '../auth/AuthContext'
 import { clearIntentionalLogout } from '../auth/intentionalLogout'
 import { RequireAuth } from '../auth/RequireAuth'
@@ -16,6 +16,7 @@ vi.mock('../api/client', async () => {
     ...actual,
     fetchCurrentUser: vi.fn(),
     createEvent: vi.fn(),
+    uploadEventPhoto: vi.fn(),
     getJourney: vi.fn().mockResolvedValue({
       id: 10,
       title: 'South Island',
@@ -31,6 +32,7 @@ vi.mock('../api/client', async () => {
 
 const mockedFetchCurrentUser = vi.mocked(fetchCurrentUser)
 const mockedCreateEvent = vi.mocked(createEvent)
+const mockedUploadEventPhoto = vi.mocked(uploadEventPhoto)
 
 const alice = {
   id: 1,
@@ -42,6 +44,18 @@ const alice = {
   description: null,
   role: 'TRAVELLER',
   active: true,
+}
+
+const createdEvent = {
+  id: 5,
+  journeyId: 10,
+  title: 'Flight NZ5373',
+  description: 'Wellington to Christchurch',
+  startAt: '2026-03-01T09:00:00',
+  endAt: '2026-03-01T10:20:00',
+  photos: [],
+  createdAt: '2026-09-08T00:00:00Z',
+  updatedAt: '2026-09-08T00:00:00Z',
 }
 
 function renderCreate() {
@@ -62,6 +76,14 @@ function renderCreate() {
                 </RequireAuth>
               }
             />
+            <Route
+              path="/journeys/:journeyId/events/:eventId/edit"
+              element={
+                <RequireAuth>
+                  <div>Event edit page</div>
+                </RequireAuth>
+              }
+            />
             <Route path="/journeys/:id" element={<div>Journey detail</div>} />
           </Routes>
         </AuthProvider>
@@ -74,6 +96,7 @@ describe('EventCreatePage', () => {
   beforeEach(() => {
     mockedFetchCurrentUser.mockReset()
     mockedCreateEvent.mockReset()
+    mockedUploadEventPhoto.mockReset()
     clearAccessToken()
     clearIntentionalLogout()
   })
@@ -82,17 +105,7 @@ describe('EventCreatePage', () => {
     const user = userEvent.setup()
     setAccessToken('token-123')
     mockedFetchCurrentUser.mockResolvedValue(alice)
-    mockedCreateEvent.mockResolvedValue({
-      id: 5,
-      journeyId: 10,
-      title: 'Flight NZ5373',
-      description: 'Wellington to Christchurch',
-      startAt: '2026-03-01T09:00:00',
-      endAt: '2026-03-01T10:20:00',
-      photos: [],
-      createdAt: '2026-09-08T00:00:00Z',
-      updatedAt: '2026-09-08T00:00:00Z',
-    })
+    mockedCreateEvent.mockResolvedValue(createdEvent)
 
     renderCreate()
 
@@ -112,5 +125,32 @@ describe('EventCreatePage', () => {
       })
     })
     expect(await screen.findByText('Journey detail')).toBeInTheDocument()
+  })
+
+  it('opens edit when the event is created but photo upload fails', async () => {
+    const user = userEvent.setup()
+    setAccessToken('token-123')
+    mockedFetchCurrentUser.mockResolvedValue(alice)
+    mockedCreateEvent.mockResolvedValue(createdEvent)
+    mockedUploadEventPhoto.mockRejectedValue(new Error('upload failed'))
+
+    renderCreate()
+
+    expect(await screen.findByRole('heading', { name: 'Add event' })).toBeInTheDocument()
+    await user.type(screen.getByLabelText(/Title/i), 'Flight NZ5373')
+    await user.type(screen.getByLabelText(/^Start/i), '2026-03-01T09:00')
+
+    const file = new File([new Uint8Array([1, 2, 3])], 'flight.jpg', { type: 'image/jpeg' })
+    const input = document.querySelector('input[type="file"]')
+    expect(input).toBeTruthy()
+    await user.upload(input as HTMLInputElement, file)
+
+    await user.click(screen.getByRole('button', { name: 'Create event' }))
+
+    await waitFor(() => {
+      expect(mockedCreateEvent).toHaveBeenCalled()
+      expect(mockedUploadEventPhoto).toHaveBeenCalled()
+    })
+    expect(await screen.findByText('Event edit page')).toBeInTheDocument()
   })
 })

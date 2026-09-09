@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import type { FormEvent } from 'react'
-import { Link, useNavigate, useParams } from 'react-router-dom'
+import { Link, useLocation, useNavigate, useParams } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   ApiError,
@@ -19,8 +19,12 @@ import {
   journeyDateTimeMin,
   toDatetimeLocalValue,
 } from './datetimeLocal'
-import { EventPhotoReplaceList } from './EventPhotoReplaceList'
 import { ConfirmDialog } from '../components/ConfirmDialog'
+import {
+  EVENT_PHOTO_UPLOAD_WARNING_STATE_KEY,
+  type EventEditLocationState,
+} from './eventCreateErrors'
+import { EventPhotoReplaceList } from './EventPhotoReplaceList'
 
 type FieldErrors = Partial<Record<'title' | 'startAt' | 'endAt', string>>
 
@@ -29,8 +33,13 @@ export function EventEditPage() {
   const journeyId = Number(journeyIdParam)
   const eventId = Number(eventIdParam)
   const navigate = useNavigate()
+  const location = useLocation()
   const queryClient = useQueryClient()
   const { accessToken, logout } = useAuth()
+
+  const locationWarning = (location.state as EventEditLocationState | null)?.[
+    EVENT_PHOTO_UPLOAD_WARNING_STATE_KEY
+  ]
 
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
@@ -38,9 +47,17 @@ export function EventEditPage() {
   const [endAt, setEndAt] = useState('')
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({})
   const [formError, setFormError] = useState<string | null>(null)
-  const [photoError, setPhotoError] = useState<string | null>(null)
+  const [photoError, setPhotoError] = useState<string | null>(locationWarning ?? null)
   const [isFormReady, setIsFormReady] = useState(false)
   const [pendingPhotoDeleteIds, setPendingPhotoDeleteIds] = useState<number[]>([])
+
+  useEffect(() => {
+    if (!locationWarning) {
+      return
+    }
+    setPhotoError(locationWarning)
+    void navigate(location.pathname, { replace: true, state: null })
+  }, [location.pathname, locationWarning, navigate])
 
   const invalidIds =
     !Number.isFinite(journeyId) ||
