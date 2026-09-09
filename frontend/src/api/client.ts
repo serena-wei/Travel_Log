@@ -145,6 +145,8 @@ export async function fetchCurrentUser(accessToken: string): Promise<UserRespons
 
 export type JourneyResponse = {
   id: number
+  ownerId: number
+  ownerUsername: string
   title: string
   description: string | null
   startDate: string | null
@@ -164,6 +166,16 @@ export type SaveJourneyRequest = {
 
 export async function listJourneys(accessToken: string): Promise<JourneyResponse[]> {
   const response = await fetch(`${API_BASE_URL}${API_V1}/journeys`, {
+    headers: authHeaders(accessToken),
+  })
+  if (!response.ok) {
+    throw await parseApiError(response)
+  }
+  return response.json() as Promise<JourneyResponse[]>
+}
+
+export async function listPublicJourneys(accessToken: string): Promise<JourneyResponse[]> {
+  const response = await fetch(`${API_BASE_URL}${API_V1}/public/journeys`, {
     headers: authHeaders(accessToken),
   })
   if (!response.ok) {

@@ -19,6 +19,8 @@ vi.mock('../api/client', async () => {
     uploadEventPhoto: vi.fn(),
     getJourney: vi.fn().mockResolvedValue({
       id: 10,
+      ownerId: 1,
+      ownerUsername: 'alice',
       title: 'South Island',
       description: null,
       startDate: null,

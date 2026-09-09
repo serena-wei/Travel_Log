@@ -44,6 +44,12 @@ export function JourneysPage() {
             TravelLog
           </Link>
           <div className="flex items-center gap-3">
+            <Link
+              to="/explore"
+              className="text-[11px] font-medium tracking-[0.2em] text-[var(--color-sea)] uppercase transition hover:text-[var(--color-sea-deep)]"
+            >
+              Explore
+            </Link>
             <span className="hidden text-sm tracking-wide text-[var(--color-stone)] sm:inline">
               {user?.username}
             </span>

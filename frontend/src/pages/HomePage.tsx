@@ -63,12 +63,20 @@ export function HomePage() {
             </p>
             <div className="animate-fade-up-delay-2 mt-11 flex flex-wrap items-center gap-4">
               {user ? (
-                <Link
-                  to="/journeys"
-                  className="bg-white px-7 py-3.5 text-[11px] font-medium tracking-[0.2em] !text-[#10161c] uppercase shadow-[0_8px_30px_rgba(0,0,0,0.12)] transition hover:bg-white/92"
-                >
-                  Continue
-                </Link>
+                <>
+                  <Link
+                    to="/journeys"
+                    className="bg-white px-7 py-3.5 text-[11px] font-medium tracking-[0.2em] !text-[#10161c] uppercase shadow-[0_8px_30px_rgba(0,0,0,0.12)] transition hover:bg-white/92"
+                  >
+                    Continue
+                  </Link>
+                  <Link
+                    to="/explore"
+                    className="border border-white/55 bg-white/8 px-7 py-3.5 text-[11px] font-medium tracking-[0.2em] text-white uppercase backdrop-blur-[2px] transition hover:border-white hover:bg-white/16"
+                  >
+                    Explore
+                  </Link>
+                </>
               ) : (
                 <>
                   <Link

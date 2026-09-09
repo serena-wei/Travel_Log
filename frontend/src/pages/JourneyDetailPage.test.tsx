@@ -52,6 +52,8 @@ const alice = {
 
 const sampleJourney: JourneyResponse = {
   id: 10,
+  ownerId: 1,
+  ownerUsername: 'alice',
   title: 'South Island',
   description: 'Road trip',
   startDate: '2026-01-10',
@@ -143,6 +145,59 @@ describe('JourneyDetailPage', () => {
       '/journeys/10/events/5/edit',
     )
     expect(screen.getByRole('button', { name: 'Delete' })).toBeInTheDocument()
+  })
+
+  it('hides edit controls on the explore route', async () => {
+    setAccessToken('token-123')
+    mockedFetchCurrentUser.mockResolvedValue(alice)
+    mockedGetJourney.mockResolvedValue({ ...sampleJourney, visibility: 'PUBLIC' })
+    mockedListEvents.mockResolvedValue([
+      {
+        id: 5,
+        journeyId: 10,
+        title: 'Day hike',
+        description: null,
+        startAt: '2026-01-12T09:00:00',
+        endAt: null,
+        photos: [],
+        createdAt: '2026-09-08T00:00:00Z',
+        updatedAt: '2026-09-08T00:00:00Z',
+      },
+    ])
+
+    const client = new QueryClient({
+      defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+    })
+
+    render(
+      <QueryClientProvider client={client}>
+        <MemoryRouter initialEntries={['/explore/10']}>
+          <AuthProvider>
+            <Routes>
+              <Route
+                path="/explore/:id"
+                element={
+                  <RequireAuth>
+                    <JourneyDetailPage />
+                  </RequireAuth>
+                }
+              />
+            </Routes>
+          </AuthProvider>
+        </MemoryRouter>
+      </QueryClientProvider>,
+    )
+
+    expect(await screen.findByRole('heading', { name: 'South Island' })).toBeInTheDocument()
+    expect(screen.getByText('By alice')).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: '← Explore' })).toHaveAttribute('href', '/explore')
+    expect(screen.getByRole('link', { name: /Day hike/i })).toHaveAttribute(
+      'href',
+      '/explore/10/events/5',
+    )
+    expect(screen.queryByRole('link', { name: 'New event' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('link', { name: 'Edit' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Delete' })).not.toBeInTheDocument()
   })
 
   it('signs out to home, then logs in to the journeys list, not the detail page', async () => {

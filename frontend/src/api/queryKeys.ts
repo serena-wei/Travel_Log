@@ -2,6 +2,7 @@ export const queryKeys = {
   health: ['health'] as const,
   journeys: {
     all: ['journeys'] as const,
+    public: ['journeys', 'public'] as const,
     detail: (id: number) => ['journeys', id] as const,
   },
   events: {

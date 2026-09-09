@@ -1,4 +1,4 @@
-import { Link, useNavigate, useParams } from 'react-router-dom'
+import { Link, useLocation, useNavigate, useParams } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { ApiError, getEvent } from '../api/client'
 import { queryKeys } from '../api/queryKeys'
@@ -9,7 +9,10 @@ export function EventDetailPage() {
   const journeyId = Number(journeyIdParam)
   const eventId = Number(eventIdParam)
   const navigate = useNavigate()
+  const location = useLocation()
   const { accessToken, logout } = useAuth()
+  const isExplore = location.pathname.startsWith('/explore/')
+  const journeyBackTo = isExplore ? `/explore/${journeyId}` : `/journeys/${journeyId}`
 
   const invalidIds =
     !Number.isFinite(journeyId) ||
@@ -79,12 +82,12 @@ export function EventDetailPage() {
                 <h1 className="font-[family-name:var(--font-display)] text-4xl font-medium tracking-wide text-[var(--color-ink)] sm:text-5xl">
                   {event.title}
                 </h1>
-                  <Link
-                    to={`/journeys/${journeyId}`}
-                    className="text-[11px] font-medium tracking-[0.2em] text-[var(--color-sea)] uppercase transition hover:text-[var(--color-sea-deep)]"
-                  >
-                    ← Journey
-                  </Link>
+                <Link
+                  to={journeyBackTo}
+                  className="text-[11px] font-medium tracking-[0.2em] text-[var(--color-sea)] uppercase transition hover:text-[var(--color-sea-deep)]"
+                >
+                  ← Journey
+                </Link>
               </div>
 
               {event.description && (
