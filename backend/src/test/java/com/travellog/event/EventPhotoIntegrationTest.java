@@ -21,6 +21,8 @@ import org.testcontainers.junit.jupiter.EnabledIfDockerAvailable;
 
 import com.travellog.TestcontainersConfiguration;
 import com.travellog.journey.JourneyRepository;
+import com.travellog.storage.FakeObjectStorage;
+import com.travellog.storage.ObjectStorage;
 import com.travellog.user.UserRepository;
 
 import tools.jackson.databind.JsonNode;
@@ -46,6 +48,9 @@ class EventPhotoIntegrationTest {
 
 	@Autowired
 	private EventPhotoRepository eventPhotoRepository;
+
+	@Autowired
+	private ObjectStorage objectStorage;
 
 	@Autowired
 	private ObjectMapper objectMapper;
@@ -239,6 +244,44 @@ class EventPhotoIntegrationTest {
 								"""))
 				.andExpect(status().isBadRequest())
 				.andExpect(jsonPath("$.code").value("VALIDATION_FAILED"));
+	}
+
+	@Test
+	void deletingJourneyRemovesPhotoRowsAndStorageObjects() throws Exception {
+		assertThat(objectStorage).isInstanceOf(FakeObjectStorage.class);
+		FakeObjectStorage fakeStorage = (FakeObjectStorage) objectStorage;
+		fakeStorage.clearDeletedObjectKeys();
+
+		String token = loginAndGetToken("alice", "Secret123");
+		Long journeyId = createJourney(token);
+		Long eventId = createEvent(token, journeyId);
+
+		MvcResult photoResult = mockMvc.perform(post("/api/v1/journeys/" + journeyId + "/events/" + eventId + "/photos/presign")
+						.header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("""
+								{
+								  "contentType": "image/jpeg",
+								  "sizeBytes": 1000,
+								  "fileName": "keep.jpg"
+								}
+								"""))
+				.andExpect(status().isCreated())
+				.andReturn();
+		String objectKey = objectMapper.readTree(photoResult.getResponse().getContentAsString())
+				.get("objectKey")
+				.asString();
+
+		assertThat(eventPhotoRepository.count()).isEqualTo(1);
+
+		mockMvc.perform(delete("/api/v1/journeys/" + journeyId)
+						.header(HttpHeaders.AUTHORIZATION, "Bearer " + token))
+				.andExpect(status().isNoContent());
+
+		assertThat(journeyRepository.findById(journeyId)).isEmpty();
+		assertThat(eventRepository.findById(eventId)).isEmpty();
+		assertThat(eventPhotoRepository.count()).isZero();
+		assertThat(fakeStorage.getDeletedObjectKeys()).contains(objectKey);
 	}
 
 	private void presign(String token, Long journeyId, Long eventId) throws Exception {
