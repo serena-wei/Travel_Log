@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react'
+import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
@@ -92,7 +92,6 @@ describe('JourneysPage', () => {
     mockedListJourneys.mockReset()
     mockedDeleteJourney.mockReset()
     clearAccessToken()
-    vi.spyOn(window, 'confirm').mockReturnValue(true)
   })
 
   it('redirects unauthenticated users to login', async () => {
@@ -145,6 +144,9 @@ describe('JourneysPage', () => {
     expect(screen.getByRole('link', { name: 'Edit' })).toHaveAttribute('href', '/journeys/10/edit')
 
     await user.click(screen.getByRole('button', { name: 'Delete' }))
+    const dialog = await screen.findByRole('alertdialog')
+    expect(dialog).toBeInTheDocument()
+    await user.click(within(dialog).getByRole('button', { name: 'Delete' }))
     await waitFor(() => {
       expect(mockedDeleteJourney).toHaveBeenCalledWith('token-123', 10)
     })
