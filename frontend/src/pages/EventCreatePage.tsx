@@ -51,9 +51,11 @@ export function EventCreatePage() {
         startAt: form.startAt,
         endAt: form.endAt || null,
       })
-      for (const photo of photos) {
-        await uploadEventPhoto(accessToken!, journeyId, created.id, photo.file)
-      }
+      await Promise.all(
+        photos.map((photo) =>
+          uploadEventPhoto(accessToken!, journeyId, created.id, photo.file),
+        ),
+      )
       return created
     },
     onMutate: () => {
