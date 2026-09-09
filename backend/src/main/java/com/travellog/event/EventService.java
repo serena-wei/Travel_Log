@@ -16,30 +16,30 @@ import com.travellog.common.ErrorCode;
 import com.travellog.common.NotFoundException;
 import com.travellog.common.ValidationException;
 import com.travellog.journey.Journey;
-import com.travellog.journey.JourneyRepository;
+import com.travellog.journey.JourneyAccess;
 
 @Service
 public class EventService {
 
 	private final EventRepository eventRepository;
-	private final JourneyRepository journeyRepository;
 	private final EventPhotoRepository eventPhotoRepository;
 	private final EventPhotoService eventPhotoService;
+	private final JourneyAccess journeyAccess;
 
 	public EventService(
 			EventRepository eventRepository,
-			JourneyRepository journeyRepository,
 			EventPhotoRepository eventPhotoRepository,
-			EventPhotoService eventPhotoService) {
+			EventPhotoService eventPhotoService,
+			JourneyAccess journeyAccess) {
 		this.eventRepository = eventRepository;
-		this.journeyRepository = journeyRepository;
 		this.eventPhotoRepository = eventPhotoRepository;
 		this.eventPhotoService = eventPhotoService;
+		this.journeyAccess = journeyAccess;
 	}
 
 	@Transactional
 	public EventResponse createForCurrentUser(Long userId, Long journeyId, CreateEventRequest request) {
-		Journey journey = requireOwnedJourney(userId, journeyId);
+		Journey journey = journeyAccess.requireOwned(userId, journeyId);
 		validateWithinJourney(journey, request.getStartAt(), request.getEndAt());
 		Event event = new Event();
 		event.setJourney(journey);
@@ -50,7 +50,7 @@ public class EventService {
 
 	@Transactional(readOnly = true)
 	public List<EventResponse> listForCurrentUser(Long userId, Long journeyId) {
-		requireOwnedJourney(userId, journeyId);
+		journeyAccess.requireReadable(userId, journeyId);
 		List<Event> events = eventRepository.findByJourneyIdOrderByStartAtAsc(journeyId);
 		if (events.isEmpty()) {
 			return List.of();
@@ -75,7 +75,7 @@ public class EventService {
 
 	@Transactional(readOnly = true)
 	public EventResponse getForCurrentUser(Long userId, Long journeyId, Long eventId) {
-		requireOwnedJourney(userId, journeyId);
+		journeyAccess.requireReadable(userId, journeyId);
 		Event event = requireEventInJourney(eventId, journeyId);
 		List<EventPhotoResponse> photos = eventPhotoRepository
 				.findByEventIdOrderBySortOrderAscIdAsc(eventId)
@@ -91,7 +91,7 @@ public class EventService {
 			Long journeyId,
 			Long eventId,
 			UpdateEventRequest request) {
-		Journey journey = requireOwnedJourney(userId, journeyId);
+		Journey journey = journeyAccess.requireOwned(userId, journeyId);
 		validateWithinJourney(journey, request.getStartAt(), request.getEndAt());
 		Event event = requireEventInJourney(eventId, journeyId);
 		assignEditableFields(event, request.getTitle(), request.getDescription(), request.getStartAt(), request.getEndAt());
@@ -106,15 +106,10 @@ public class EventService {
 
 	@Transactional
 	public void deleteForCurrentUser(Long userId, Long journeyId, Long eventId) {
-		requireOwnedJourney(userId, journeyId);
+		journeyAccess.requireOwned(userId, journeyId);
 		Event event = requireEventInJourney(eventId, journeyId);
 		eventPhotoService.deleteStorageForEvent(eventId);
 		eventRepository.delete(event);
-	}
-
-	private Journey requireOwnedJourney(Long userId, Long journeyId) {
-		return journeyRepository.findByIdAndUserId(journeyId, userId)
-				.orElseThrow(() -> new NotFoundException(ErrorCode.JOURNEY_NOT_FOUND, ApiMessages.JOURNEY_NOT_FOUND));
 	}
 
 	private Event requireEventInJourney(Long eventId, Long journeyId) {

@@ -7,7 +7,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.travellog.common.ApiMessages;
 import com.travellog.common.ErrorCode;
-import com.travellog.common.NotFoundException;
 import com.travellog.common.UnauthorizedException;
 import com.travellog.event.EventPhotoService;
 import com.travellog.user.User;
@@ -19,14 +18,17 @@ public class JourneyService {
 	private final JourneyRepository journeyRepository;
 	private final UserRepository userRepository;
 	private final EventPhotoService eventPhotoService;
+	private final JourneyAccess journeyAccess;
 
 	public JourneyService(
 			JourneyRepository journeyRepository,
 			UserRepository userRepository,
-			EventPhotoService eventPhotoService) {
+			EventPhotoService eventPhotoService,
+			JourneyAccess journeyAccess) {
 		this.journeyRepository = journeyRepository;
 		this.userRepository = userRepository;
 		this.eventPhotoService = eventPhotoService;
+		this.journeyAccess = journeyAccess;
 	}
 
 	@Transactional
@@ -52,16 +54,20 @@ public class JourneyService {
 	}
 
 	@Transactional(readOnly = true)
+	public List<JourneyResponse> listPublic() {
+		return journeyRepository.findByVisibilityOrderByUpdatedAtDesc(JourneyVisibility.PUBLIC).stream()
+				.map(JourneyResponse::from)
+				.toList();
+	}
+
+	@Transactional(readOnly = true)
 	public JourneyResponse getForCurrentUser(Long userId, Long journeyId) {
-		Journey journey = journeyRepository.findByIdAndUserId(journeyId, userId)
-				.orElseThrow(() -> new NotFoundException(ErrorCode.JOURNEY_NOT_FOUND, ApiMessages.JOURNEY_NOT_FOUND));
-		return JourneyResponse.from(journey);
+		return JourneyResponse.from(journeyAccess.requireReadable(userId, journeyId));
 	}
 
 	@Transactional
 	public JourneyResponse updateForCurrentUser(Long userId, Long journeyId, UpdateJourneyRequest request) {
-		Journey journey = journeyRepository.findByIdAndUserId(journeyId, userId)
-				.orElseThrow(() -> new NotFoundException(ErrorCode.JOURNEY_NOT_FOUND, ApiMessages.JOURNEY_NOT_FOUND));
+		Journey journey = journeyAccess.requireOwned(userId, journeyId);
 
 		journey.setTitle(request.getTitle().trim());
 		journey.setDescription(trimToNull(request.getDescription()));
@@ -75,8 +81,7 @@ public class JourneyService {
 
 	@Transactional
 	public void deleteForCurrentUser(Long userId, Long journeyId) {
-		Journey journey = journeyRepository.findByIdAndUserId(journeyId, userId)
-				.orElseThrow(() -> new NotFoundException(ErrorCode.JOURNEY_NOT_FOUND, ApiMessages.JOURNEY_NOT_FOUND));
+		Journey journey = journeyAccess.requireOwned(userId, journeyId);
 		eventPhotoService.deleteStorageForJourney(journeyId);
 		journeyRepository.delete(journey);
 	}

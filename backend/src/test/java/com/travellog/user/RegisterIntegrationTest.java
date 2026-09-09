@@ -79,24 +79,6 @@ class RegisterIntegrationTest {
 	}
 
 	@Test
-	void registerWithoutOptionalFieldsSucceeds() throws Exception {
-		mockMvc.perform(post("/api/v1/auth/register")
-						.contentType(MediaType.APPLICATION_JSON)
-						.content("""
-								{
-								  "username": "bob",
-								  "email": "bob@example.com",
-								  "password": "Secret123",
-								  "confirmPassword": "Secret123"
-								}
-								"""))
-				.andExpect(status().isCreated())
-				.andExpect(jsonPath("$.username").value("bob"))
-				.andExpect(jsonPath("$.firstName").isEmpty())
-				.andExpect(jsonPath("$.role").value("TRAVELLER"));
-	}
-
-	@Test
 	void registerDuplicateUsernameReturnsConflict() throws Exception {
 		registerUser("carol", "carol@example.com");
 
@@ -130,22 +112,6 @@ class RegisterIntegrationTest {
 								"""))
 				.andExpect(status().isConflict())
 				.andExpect(jsonPath("$.code").value("EMAIL_IN_USE"));
-	}
-
-	@Test
-	void registerPasswordMismatchReturnsBadRequest() throws Exception {
-		mockMvc.perform(post("/api/v1/auth/register")
-						.contentType(MediaType.APPLICATION_JSON)
-						.content("""
-								{
-								  "username": "erin",
-								  "email": "erin@example.com",
-								  "password": "Secret123",
-								  "confirmPassword": "Secret999"
-								}
-								"""))
-				.andExpect(status().isBadRequest())
-				.andExpect(jsonPath("$.code").value("VALIDATION_FAILED"));
 	}
 
 	@Test

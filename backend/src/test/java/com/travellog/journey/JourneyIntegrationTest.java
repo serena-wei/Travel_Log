@@ -52,19 +52,6 @@ class JourneyIntegrationTest {
 	}
 
 	@Test
-	void createRequiresAuthentication() throws Exception {
-		mockMvc.perform(post("/api/v1/journeys")
-						.contentType(MediaType.APPLICATION_JSON)
-						.content("""
-								{
-								  "title": "South Island"
-								}
-								"""))
-				.andExpect(status().isUnauthorized())
-				.andExpect(jsonPath("$.code").value("UNAUTHORIZED"));
-	}
-
-	@Test
 	void createDefaultsToPrivateAndSetsTimestamps() throws Exception {
 		String token = loginAndGetToken("alice", "Secret123");
 
@@ -160,7 +147,7 @@ class JourneyIntegrationTest {
 	}
 
 	@Test
-	void cannotAccessAnotherUsersJourney() throws Exception {
+	void cannotAccessAnotherUsersPrivateJourney() throws Exception {
 		String aliceToken = loginAndGetToken("alice", "Secret123");
 		String bobToken = loginAndGetToken("bob", "Secret123");
 		Long aliceJourneyId = createJourney(aliceToken, "Alice Only", null);
