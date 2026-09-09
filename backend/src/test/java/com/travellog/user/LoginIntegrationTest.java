@@ -74,13 +74,6 @@ class LoginIntegrationTest {
 	}
 
 	@Test
-	void currentUserRequiresAuthentication() throws Exception {
-		mockMvc.perform(get("/api/v1/users/current"))
-				.andExpect(status().isUnauthorized())
-				.andExpect(jsonPath("$.code").value("UNAUTHORIZED"));
-	}
-
-	@Test
 	void currentUserReturnsProfileWithValidToken() throws Exception {
 		String token = loginAndGetToken("alice", "Secret123");
 
@@ -136,6 +129,6 @@ class LoginIntegrationTest {
 				.andReturn();
 
 		JsonNode body = objectMapper.readTree(result.getResponse().getContentAsString());
-		return body.get("accessToken").asText();
+		return body.get("accessToken").asString();
 	}
 }

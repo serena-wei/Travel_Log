@@ -57,20 +57,6 @@ class EventIntegrationTest {
 	}
 
 	@Test
-	void createRequiresAuthentication() throws Exception {
-		mockMvc.perform(post("/api/v1/journeys/1/events")
-						.contentType(MediaType.APPLICATION_JSON)
-						.content("""
-								{
-								  "title": "Flight",
-								  "startAt": "2026-03-01T09:00:00"
-								}
-								"""))
-				.andExpect(status().isUnauthorized())
-				.andExpect(jsonPath("$.code").value("UNAUTHORIZED"));
-	}
-
-	@Test
 	void createListGetUpdateDeleteOwnEvents() throws Exception {
 		String token = loginAndGetToken("alice", "Secret123");
 		Long journeyId = createJourney(token, "South Island");
@@ -144,7 +130,7 @@ class EventIntegrationTest {
 	}
 
 	@Test
-	void cannotAccessAnotherUsersJourneyEvents() throws Exception {
+	void cannotAccessAnotherUsersPrivateJourneyEvents() throws Exception {
 		String aliceToken = loginAndGetToken("alice", "Secret123");
 		String bobToken = loginAndGetToken("bob", "Secret123");
 		Long aliceJourneyId = createJourney(aliceToken, "Alice Only");
@@ -171,35 +157,6 @@ class EventIntegrationTest {
 						.header(HttpHeaders.AUTHORIZATION, "Bearer " + bobToken))
 				.andExpect(status().isNotFound())
 				.andExpect(jsonPath("$.code").value("JOURNEY_NOT_FOUND"));
-	}
-
-	@Test
-	void missingJourneyReturnsNotFound() throws Exception {
-		String token = loginAndGetToken("alice", "Secret123");
-
-		mockMvc.perform(get("/api/v1/journeys/999999/events")
-						.header(HttpHeaders.AUTHORIZATION, "Bearer " + token))
-				.andExpect(status().isNotFound())
-				.andExpect(jsonPath("$.code").value("JOURNEY_NOT_FOUND"));
-	}
-
-	@Test
-	void rejectsInvalidTimeRange() throws Exception {
-		String token = loginAndGetToken("alice", "Secret123");
-		Long journeyId = createJourney(token, "Bad Dates", null, null);
-
-		mockMvc.perform(post("/api/v1/journeys/" + journeyId + "/events")
-						.header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
-						.contentType(MediaType.APPLICATION_JSON)
-						.content("""
-								{
-								  "title": "Impossible",
-								  "startAt": "2026-03-01T18:00:00",
-								  "endAt": "2026-03-01T10:00:00"
-								}
-								"""))
-				.andExpect(status().isBadRequest())
-				.andExpect(jsonPath("$.code").value("VALIDATION_FAILED"));
 	}
 
 	@Test

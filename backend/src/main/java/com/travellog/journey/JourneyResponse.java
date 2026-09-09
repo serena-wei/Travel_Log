@@ -5,6 +5,8 @@ import java.time.LocalDate;
 
 public record JourneyResponse(
 		Long id,
+		Long ownerId,
+		String ownerUsername,
 		String title,
 		String description,
 		LocalDate startDate,
@@ -16,6 +18,8 @@ public record JourneyResponse(
 	public static JourneyResponse from(Journey journey) {
 		return new JourneyResponse(
 				journey.getId(),
+				journey.getUser().getId(),
+				journey.getUser().getUsername(),
 				journey.getTitle(),
 				journey.getDescription(),
 				journey.getStartDate(),

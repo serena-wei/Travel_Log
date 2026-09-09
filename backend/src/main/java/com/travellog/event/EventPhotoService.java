@@ -15,8 +15,7 @@ import com.travellog.common.ApiMessages;
 import com.travellog.common.ErrorCode;
 import com.travellog.common.NotFoundException;
 import com.travellog.common.ValidationException;
-import com.travellog.journey.Journey;
-import com.travellog.journey.JourneyRepository;
+import com.travellog.journey.JourneyAccess;
 import com.travellog.storage.ObjectStorage;
 import com.travellog.storage.S3Properties;
 
@@ -33,19 +32,19 @@ public class EventPhotoService {
 
 	private final EventPhotoRepository eventPhotoRepository;
 	private final EventRepository eventRepository;
-	private final JourneyRepository journeyRepository;
+	private final JourneyAccess journeyAccess;
 	private final ObjectStorage objectStorage;
 	private final S3Properties s3Properties;
 
 	public EventPhotoService(
 			EventPhotoRepository eventPhotoRepository,
 			EventRepository eventRepository,
-			JourneyRepository journeyRepository,
+			JourneyAccess journeyAccess,
 			ObjectStorage objectStorage,
 			S3Properties s3Properties) {
 		this.eventPhotoRepository = eventPhotoRepository;
 		this.eventRepository = eventRepository;
-		this.journeyRepository = journeyRepository;
+		this.journeyAccess = journeyAccess;
 		this.objectStorage = objectStorage;
 		this.s3Properties = s3Properties;
 	}
@@ -60,7 +59,7 @@ public class EventPhotoService {
 			Long journeyId,
 			Long eventId,
 			PresignPhotoRequest request) {
-		requireOwnedJourney(userId, journeyId);
+		journeyAccess.requireOwned(userId, journeyId);
 		Event event = requireEventInJourney(eventId, journeyId);
 
 		String contentType = normalizeContentType(request.getContentType());
@@ -102,7 +101,7 @@ public class EventPhotoService {
 			Long eventId,
 			Long photoId,
 			PresignPhotoRequest request) {
-		requireOwnedJourney(userId, journeyId);
+		journeyAccess.requireOwned(userId, journeyId);
 		requireEventInJourney(eventId, journeyId);
 		EventPhoto photo = requirePhotoInEvent(photoId, eventId);
 
@@ -149,7 +148,7 @@ public class EventPhotoService {
 
 	@Transactional
 	public void deleteForCurrentUser(Long userId, Long journeyId, Long eventId, Long photoId) {
-		requireOwnedJourney(userId, journeyId);
+		journeyAccess.requireOwned(userId, journeyId);
 		requireEventInJourney(eventId, journeyId);
 		EventPhoto photo = requirePhotoInEvent(photoId, eventId);
 		String objectKey = photo.getObjectKey();
@@ -207,11 +206,6 @@ public class EventPhotoService {
 		if (sizeBytes > MAX_PHOTO_BYTES) {
 			details.put("sizeBytes", ApiMessages.PHOTO_TOO_LARGE);
 		}
-	}
-
-	private Journey requireOwnedJourney(Long userId, Long journeyId) {
-		return journeyRepository.findByIdAndUserId(journeyId, userId)
-				.orElseThrow(() -> new NotFoundException(ErrorCode.JOURNEY_NOT_FOUND, ApiMessages.JOURNEY_NOT_FOUND));
 	}
 
 	private Event requireEventInJourney(Long eventId, Long journeyId) {

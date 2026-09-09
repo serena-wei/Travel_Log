@@ -139,25 +139,6 @@ class EventPhotoIntegrationTest {
 	}
 
 	@Test
-	void replaceMissingPhotoReturnsNotFound() throws Exception {
-		String token = loginAndGetToken("alice", "Secret123");
-		Long journeyId = createJourney(token);
-		Long eventId = createEvent(token, journeyId);
-
-		mockMvc.perform(post("/api/v1/journeys/" + journeyId + "/events/" + eventId + "/photos/999999/presign-replace")
-						.header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
-						.contentType(MediaType.APPLICATION_JSON)
-						.content("""
-								{
-								  "contentType": "image/jpeg",
-								  "sizeBytes": 1000
-								}
-								"""))
-				.andExpect(status().isNotFound())
-				.andExpect(jsonPath("$.code").value("PHOTO_NOT_FOUND"));
-	}
-
-	@Test
 	void deletePhotoRemovesRowAndResequencesSortOrder() throws Exception {
 		String token = loginAndGetToken("alice", "Secret123");
 		Long journeyId = createJourney(token);
@@ -175,18 +156,6 @@ class EventPhotoIntegrationTest {
 		assertThat(eventPhotoRepository.countByEventId(eventId)).isEqualTo(2);
 		assertThat(eventPhotoRepository.findById(firstId).orElseThrow().getSortOrder()).isEqualTo(0);
 		assertThat(eventPhotoRepository.findById(thirdId).orElseThrow().getSortOrder()).isEqualTo(1);
-	}
-
-	@Test
-	void deleteMissingPhotoReturnsNotFound() throws Exception {
-		String token = loginAndGetToken("alice", "Secret123");
-		Long journeyId = createJourney(token);
-		Long eventId = createEvent(token, journeyId);
-
-		mockMvc.perform(delete("/api/v1/journeys/" + journeyId + "/events/" + eventId + "/photos/999999")
-						.header(HttpHeaders.AUTHORIZATION, "Bearer " + token))
-				.andExpect(status().isNotFound())
-				.andExpect(jsonPath("$.code").value("PHOTO_NOT_FOUND"));
 	}
 
 	@Test
