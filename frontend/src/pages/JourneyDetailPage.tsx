@@ -169,66 +169,96 @@ export function JourneyDetailPage() {
                 )}
 
                 {eventsQuery.data && eventsQuery.data.length > 0 && (
-                  <ul className="divide-y divide-[var(--color-line)] border-y border-[var(--color-line)]">
-                    {eventsQuery.data.map((eventItem) => (
-                      <li
-                        key={eventItem.id}
-                        className="flex flex-col gap-3 py-5 sm:flex-row sm:items-center sm:justify-between sm:gap-6"
-                      >
-                        <Link
-                          to={`/journeys/${journeyId}/events/${eventItem.id}`}
-                          className="min-w-0 flex-1 transition hover:opacity-80"
-                        >
-                          <p className="font-[family-name:var(--font-display)] text-2xl font-medium tracking-wide text-[var(--color-ink)]">
-                            {eventItem.title}
-                          </p>
-                          {eventItem.description && (
-                            <p className="mt-1 max-w-2xl text-sm font-light text-[var(--color-stone)] line-clamp-2">
-                              {eventItem.description}
+                  <ol className="mt-2">
+                    {eventsQuery.data.map((eventItem, index) => {
+                      const isLast = index === eventsQuery.data.length - 1
+                      const { dateLabel, timeLabel } = splitEventWhen(
+                        eventItem.startAt,
+                        eventItem.endAt,
+                      )
+                      return (
+                        <li key={eventItem.id} className="relative grid grid-cols-[4.5rem_1fr] gap-x-4 pb-10 last:pb-0 sm:grid-cols-[6.5rem_1fr] sm:gap-x-6">
+                          <div className="text-right">
+                            <p className="pt-0.5 text-[10px] font-medium tracking-[0.12em] text-[var(--color-stone)] uppercase sm:text-[11px] sm:tracking-[0.14em]">
+                              {dateLabel}
                             </p>
-                          )}
-                          <div className="mt-2 text-[11px] tracking-[0.16em] text-[var(--color-stone)] uppercase">
-                            {formatEventWhen(eventItem.startAt, eventItem.endAt)}
                           </div>
-                          {eventItem.photos.length > 0 && (
-                            <div className="mt-3 flex gap-2">
-                              {eventItem.photos.slice(0, 3).map((photo) => (
-                                <img
-                                  key={photo.id}
-                                  src={photo.url}
-                                  alt=""
-                                  className="h-14 w-14 object-cover border border-[var(--color-line)]"
-                                />
-                              ))}
-                              {eventItem.photos.length > 3 && (
-                                <span className="flex h-14 items-center text-xs text-[var(--color-stone)]">
-                                  +{eventItem.photos.length - 3}
-                                </span>
-                              )}
+
+                          <div className="relative min-w-0 pl-6 sm:pl-8">
+                            {!isLast && (
+                              <span
+                                aria-hidden="true"
+                                className="absolute top-3 bottom-[-2.5rem] left-[0.3125rem] w-px bg-[var(--color-line)] sm:left-[0.4375rem]"
+                              />
+                            )}
+                            <span
+                              aria-hidden="true"
+                              className="absolute top-1.5 left-0 size-2.5 rounded-full border-2 border-[var(--color-sea)] bg-[var(--color-paper)] sm:size-3"
+                            />
+
+                            <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-6">
+                              <Link
+                                to={`/journeys/${journeyId}/events/${eventItem.id}`}
+                                className="min-w-0 flex-1 transition hover:opacity-80"
+                              >
+                                {timeLabel && (
+                                  <p className="mb-1 text-[11px] tracking-[0.16em] text-[var(--color-gold)] uppercase">
+                                    {timeLabel}
+                                  </p>
+                                )}
+                                <p className="font-[family-name:var(--font-display)] text-2xl font-medium tracking-wide text-[var(--color-ink)]">
+                                  {eventItem.title}
+                                </p>
+                                {eventItem.description && (
+                                  <p className="mt-1 max-w-2xl text-sm font-light text-[var(--color-stone)] line-clamp-2">
+                                    {eventItem.description}
+                                  </p>
+                                )}
+                                {eventItem.photos.length > 0 && (
+                                  <div className="mt-3 flex gap-2">
+                                    {eventItem.photos.slice(0, 3).map((photo) => (
+                                      <img
+                                        key={photo.id}
+                                        src={photo.url}
+                                        alt=""
+                                        className="h-14 w-14 object-cover border border-[var(--color-line)]"
+                                      />
+                                    ))}
+                                    {eventItem.photos.length > 3 && (
+                                      <span className="flex h-14 items-center text-xs text-[var(--color-stone)]">
+                                        +{eventItem.photos.length - 3}
+                                      </span>
+                                    )}
+                                  </div>
+                                )}
+                              </Link>
+                              <div className="flex shrink-0 items-center gap-3">
+                                <Link
+                                  to={`/journeys/${journeyId}/events/${eventItem.id}/edit`}
+                                  className="border border-[var(--color-line)] px-4 py-2 text-[11px] font-medium tracking-[0.2em] text-[var(--color-ink)] uppercase transition hover:border-[var(--color-sea)]"
+                                >
+                                  Edit
+                                </Link>
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    setPendingDelete({
+                                      id: eventItem.id,
+                                      title: eventItem.title,
+                                    })
+                                  }
+                                  disabled={deleteMutation.isPending}
+                                  className="border border-[var(--color-danger)] px-4 py-2 text-[11px] font-medium tracking-[0.2em] text-[var(--color-danger)] uppercase transition hover:bg-[color-mix(in_srgb,var(--color-danger)_8%,white)] disabled:cursor-not-allowed disabled:opacity-60"
+                                >
+                                  Delete
+                                </button>
+                              </div>
                             </div>
-                          )}
-                        </Link>
-                        <div className="flex shrink-0 items-center gap-3">
-                          <Link
-                            to={`/journeys/${journeyId}/events/${eventItem.id}/edit`}
-                            className="border border-[var(--color-line)] px-4 py-2 text-[11px] font-medium tracking-[0.2em] text-[var(--color-ink)] uppercase transition hover:border-[var(--color-sea)]"
-                          >
-                            Edit
-                          </Link>
-                          <button
-                            type="button"
-                            onClick={() =>
-                              setPendingDelete({ id: eventItem.id, title: eventItem.title })
-                            }
-                            disabled={deleteMutation.isPending}
-                            className="border border-[var(--color-danger)] px-4 py-2 text-[11px] font-medium tracking-[0.2em] text-[var(--color-danger)] uppercase transition hover:bg-[color-mix(in_srgb,var(--color-danger)_8%,white)] disabled:cursor-not-allowed disabled:opacity-60"
-                          >
-                            Delete
-                          </button>
-                        </div>
-                      </li>
-                    ))}
-                  </ul>
+                          </div>
+                        </li>
+                      )
+                    })}
+                  </ol>
                 )}
               </div>
             </section>
@@ -266,10 +296,29 @@ function formatDateRange(startDate: string | null, endDate: string | null): stri
   return startDate ?? endDate
 }
 
-function formatEventWhen(startAt: string, endAt: string | null): string {
-  const start = startAt.replace('T', ' ').slice(0, 16)
+function splitEventWhen(
+  startAt: string,
+  endAt: string | null,
+): { dateLabel: string; timeLabel: string | null } {
+  const startDate = startAt.slice(0, 10)
+  const startTime = startAt.includes('T') ? startAt.slice(11, 16) : null
   if (!endAt) {
-    return start
+    return {
+      dateLabel: startDate,
+      timeLabel: startTime,
+    }
   }
-  return `${start} → ${endAt.replace('T', ' ').slice(0, 16)}`
+  const endDate = endAt.slice(0, 10)
+  const endTime = endAt.includes('T') ? endAt.slice(11, 16) : null
+  if (startDate === endDate) {
+    return {
+      dateLabel: startDate,
+      timeLabel:
+        startTime && endTime ? `${startTime} – ${endTime}` : (startTime ?? endTime),
+    }
+  }
+  return {
+    dateLabel: startDate,
+    timeLabel: `${startAt.replace('T', ' ').slice(0, 16)} → ${endAt.replace('T', ' ').slice(0, 16)}`,
+  }
 }
