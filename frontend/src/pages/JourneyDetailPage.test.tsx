@@ -16,6 +16,7 @@ import { clearIntentionalLogout } from '../auth/intentionalLogout'
 import { RequireAuth } from '../auth/RequireAuth'
 import { clearAccessToken, setAccessToken } from '../auth/token'
 import { JourneyDetailPage } from './JourneyDetailPage'
+import { HomePage } from './HomePage'
 import { JourneysPage } from './JourneysPage'
 import { LoginPage } from './LoginPage'
 
@@ -70,6 +71,7 @@ function renderDetail() {
       <MemoryRouter initialEntries={['/journeys/10']}>
         <AuthProvider>
           <Routes>
+            <Route path="/" element={<HomePage />} />
             <Route path="/login" element={<LoginPage />} />
             <Route
               path="/journeys"
@@ -140,7 +142,7 @@ describe('JourneyDetailPage', () => {
     expect(screen.getByRole('button', { name: 'Delete' })).toBeInTheDocument()
   })
 
-  it('signs out then logs in to the journeys list, not the detail page', async () => {
+  it('signs out to home, then logs in to the journeys list, not the detail page', async () => {
     const user = userEvent.setup()
     setAccessToken('token-123')
     mockedFetchCurrentUser.mockResolvedValue(alice)
@@ -155,6 +157,9 @@ describe('JourneyDetailPage', () => {
 
     expect(await screen.findByRole('heading', { name: 'South Island' })).toBeInTheDocument()
     await user.click(screen.getByRole('button', { name: 'Sign out' }))
+
+    expect(await screen.findByRole('heading', { name: 'TravelLog' })).toBeInTheDocument()
+    await user.click(screen.getByRole('link', { name: 'Sign in' }))
 
     expect(await screen.findByRole('heading', { name: 'Welcome back' })).toBeInTheDocument()
     await user.type(screen.getByLabelText(/Username/i), 'alice')

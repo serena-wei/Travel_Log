@@ -10,6 +10,10 @@ import {
   journeyDateTimeMax,
   journeyDateTimeMin,
 } from './datetimeLocal'
+import {
+  EVENT_PHOTO_UPLOAD_WARNING_STATE_KEY,
+  EventCreatedPhotoUploadError,
+} from './eventCreateErrors'
 import { EventPhotoPicker, type SelectedPhoto } from './EventPhotoPicker'
 
 type FieldErrors = Partial<Record<'title' | 'startAt' | 'endAt', string>>
@@ -51,11 +55,17 @@ export function EventCreatePage() {
         startAt: form.startAt,
         endAt: form.endAt || null,
       })
-      await Promise.all(
-        photos.map((photo) =>
-          uploadEventPhoto(accessToken!, journeyId, created.id, photo.file),
-        ),
-      )
+      if (photos.length > 0) {
+        try {
+          await Promise.all(
+            photos.map((photo) =>
+              uploadEventPhoto(accessToken!, journeyId, created.id, photo.file),
+            ),
+          )
+        } catch (cause) {
+          throw new EventCreatedPhotoUploadError(created.id, cause)
+        }
+      }
       return created
     },
     onMutate: () => {
@@ -66,7 +76,18 @@ export function EventCreatePage() {
       await queryClient.invalidateQueries({ queryKey: queryKeys.events.all(journeyId) })
       void navigate(`/journeys/${journeyId}`, { replace: true })
     },
-    onError: (error: Error) => {
+    onError: async (error: Error) => {
+      if (error instanceof EventCreatedPhotoUploadError) {
+        await queryClient.invalidateQueries({ queryKey: queryKeys.events.all(journeyId) })
+        await queryClient.invalidateQueries({
+          queryKey: queryKeys.events.detail(journeyId, error.eventId),
+        })
+        void navigate(`/journeys/${journeyId}/events/${error.eventId}/edit`, {
+          replace: true,
+          state: { [EVENT_PHOTO_UPLOAD_WARNING_STATE_KEY]: error.message },
+        })
+        return
+      }
       if (error instanceof ApiError) {
         if (error.code === 'VALIDATION_FAILED' && Object.keys(error.details).length > 0) {
           const next: FieldErrors = {}
