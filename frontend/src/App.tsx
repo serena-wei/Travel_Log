@@ -9,6 +9,7 @@ import { JourneyDetailPage } from './pages/JourneyDetailPage'
 import { JourneyEditPage } from './pages/JourneyEditPage'
 import { JourneysPage } from './pages/JourneysPage'
 import { LoginPage } from './pages/LoginPage'
+import { PublicJourneysPage } from './pages/PublicJourneysPage'
 import { RegisterPage } from './pages/RegisterPage'
 
 export default function App() {
@@ -17,6 +18,30 @@ export default function App() {
       <Route path="/" element={<HomePage />} />
       <Route path="/login" element={<LoginPage />} />
       <Route path="/register" element={<RegisterPage />} />
+      <Route
+        path="/explore"
+        element={
+          <RequireAuth>
+            <PublicJourneysPage />
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/explore/:journeyId/events/:eventId"
+        element={
+          <RequireAuth>
+            <EventDetailPage />
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/explore/:id"
+        element={
+          <RequireAuth>
+            <JourneyDetailPage />
+          </RequireAuth>
+        }
+      />
       <Route
         path="/journeys"
         element={

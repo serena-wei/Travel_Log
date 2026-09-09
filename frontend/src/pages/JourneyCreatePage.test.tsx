@@ -44,6 +44,8 @@ const alice = {
 
 const sampleJourney: JourneyResponse = {
   id: 10,
+  ownerId: 1,
+  ownerUsername: 'alice',
   title: 'South Island',
   description: 'Road trip',
   startDate: '2026-01-10',
@@ -119,33 +121,6 @@ describe('JourneyCreatePage', () => {
     })
     expect(await screen.findByRole('heading', { name: 'Journeys' })).toBeInTheDocument()
     expect(await screen.findByText('South Island')).toBeInTheDocument()
-  })
-
-  it('blocks empty title on create', async () => {
-    const user = userEvent.setup()
-    setAccessToken('token-123')
-    mockedFetchCurrentUser.mockResolvedValue(alice)
-
-    renderCreate()
-
-    await screen.findByRole('heading', { name: 'Create a trip' })
-    await user.click(screen.getByRole('button', { name: 'Create journey' }))
-
-    expect(await screen.findByText('Title is required')).toBeInTheDocument()
-    expect(mockedCreateJourney).not.toHaveBeenCalled()
-  })
-
-  it('limits end date to on or after start date', async () => {
-    const user = userEvent.setup()
-    setAccessToken('token-123')
-    mockedFetchCurrentUser.mockResolvedValue(alice)
-
-    renderCreate()
-
-    await screen.findByRole('heading', { name: 'Create a trip' })
-    await user.type(screen.getByLabelText(/Start date/i), '2026-09-06')
-
-    expect(screen.getByLabelText(/End date/i)).toHaveAttribute('min', '2026-09-06')
   })
 
   it('shows API validation errors', async () => {

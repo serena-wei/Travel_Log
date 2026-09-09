@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Link, useNavigate, useParams } from 'react-router-dom'
+import { Link, useLocation, useNavigate, useParams } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { ApiError, deleteEvent, getJourney, listEvents } from '../api/client'
 import { queryKeys } from '../api/queryKeys'
@@ -10,9 +10,18 @@ export function JourneyDetailPage() {
   const { id } = useParams()
   const journeyId = Number(id)
   const navigate = useNavigate()
+  const location = useLocation()
   const queryClient = useQueryClient()
   const { accessToken, logout } = useAuth()
   const [pendingDelete, setPendingDelete] = useState<{ id: number; title: string } | null>(null)
+
+  const readOnly = location.pathname.startsWith('/explore')
+  const backTo = readOnly ? '/explore' : '/journeys'
+  const backLabel = readOnly ? '← Explore' : '← Journeys'
+  const eventPath = (eventId: number) =>
+    readOnly
+      ? `/explore/${journeyId}/events/${eventId}`
+      : `/journeys/${journeyId}/events/${eventId}`
 
   const journeyQuery = useQuery({
     queryKey: queryKeys.journeys.detail(journeyId),
@@ -86,7 +95,7 @@ export function JourneyDetailPage() {
           <>
             <div>
               <p className="mb-3 text-[11px] font-medium tracking-[0.28em] text-[var(--color-gold)] uppercase">
-                Journey
+                {readOnly ? 'Public journey' : 'Journey'}
               </p>
               <div className="flex flex-wrap items-baseline justify-between gap-4">
                 <h1 className="font-[family-name:var(--font-display)] text-4xl font-medium tracking-wide text-[var(--color-ink)] sm:text-5xl">
@@ -94,16 +103,20 @@ export function JourneyDetailPage() {
                 </h1>
                 <div className="flex shrink-0 items-center gap-4">
                   <Link
-                    to="/journeys"
+                    to={backTo}
                     className="text-[11px] font-medium tracking-[0.2em] text-[var(--color-sea)] uppercase transition hover:text-[var(--color-sea-deep)]"
                   >
-                    ← Journeys
+                    {backLabel}
                   </Link>
                 </div>
               </div>
 
               <div className="mt-4 flex flex-wrap gap-x-4 gap-y-1 text-[11px] tracking-[0.16em] text-[var(--color-stone)] uppercase">
-                <span>{journey.visibility === 'PRIVATE' ? 'Private' : 'Public'}</span>
+                {readOnly ? (
+                  <span>By {journey.ownerUsername}</span>
+                ) : (
+                  <span>{journey.visibility === 'PRIVATE' ? 'Private' : 'Public'}</span>
+                )}
                 {formatDateRange(journey.startDate, journey.endDate) && (
                   <span>{formatDateRange(journey.startDate, journey.endDate)}</span>
                 )}
@@ -126,12 +139,14 @@ export function JourneyDetailPage() {
                     Events
                   </h2>
                 </div>
-                <Link
-                  to={`/journeys/${journeyId}/events/new`}
-                  className="shrink-0 bg-[var(--color-sea)] px-5 py-3 text-[11px] font-medium tracking-[0.2em] !text-white uppercase transition hover:bg-[var(--color-sea-deep)]"
-                >
-                  New event
-                </Link>
+                {!readOnly && (
+                  <Link
+                    to={`/journeys/${journeyId}/events/new`}
+                    className="shrink-0 bg-[var(--color-sea)] px-5 py-3 text-[11px] font-medium tracking-[0.2em] !text-white uppercase transition hover:bg-[var(--color-sea-deep)]"
+                  >
+                    New event
+                  </Link>
+                )}
               </div>
 
               <div className="mt-8">
@@ -147,7 +162,7 @@ export function JourneyDetailPage() {
                   </p>
                 )}
 
-                {deleteMutation.isError && (
+                {!readOnly && deleteMutation.isError && (
                   <p role="alert" className="mb-4 text-sm text-[var(--color-danger)]">
                     {deleteMutation.error instanceof ApiError
                       ? deleteMutation.error.message
@@ -157,14 +172,20 @@ export function JourneyDetailPage() {
 
                 {eventsQuery.data && eventsQuery.data.length === 0 && (
                   <p className="text-sm font-light text-[var(--color-stone)]">
-                    No events yet.{' '}
-                    <Link
-                      to={`/journeys/${journeyId}/events/new`}
-                      className="font-medium text-[var(--color-sea)] underline-offset-4 hover:underline"
-                    >
-                      Add the first one
-                    </Link>
-                    .
+                    {readOnly ? (
+                      'No events on this journey yet.'
+                    ) : (
+                      <>
+                        No events yet.{' '}
+                        <Link
+                          to={`/journeys/${journeyId}/events/new`}
+                          className="font-medium text-[var(--color-sea)] underline-offset-4 hover:underline"
+                        >
+                          Add the first one
+                        </Link>
+                        .
+                      </>
+                    )}
                   </p>
                 )}
 
@@ -177,7 +198,10 @@ export function JourneyDetailPage() {
                         eventItem.endAt,
                       )
                       return (
-                        <li key={eventItem.id} className="relative grid grid-cols-[4.5rem_1fr] gap-x-4 pb-10 last:pb-0 sm:grid-cols-[6.5rem_1fr] sm:gap-x-6">
+                        <li
+                          key={eventItem.id}
+                          className="relative grid grid-cols-[4.5rem_1fr] gap-x-4 pb-10 last:pb-0 sm:grid-cols-[6.5rem_1fr] sm:gap-x-6"
+                        >
                           <div className="text-right">
                             <p className="pt-0.5 text-[10px] font-medium tracking-[0.12em] text-[var(--color-stone)] uppercase sm:text-[11px] sm:tracking-[0.14em]">
                               {dateLabel}
@@ -198,7 +222,7 @@ export function JourneyDetailPage() {
 
                             <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-6">
                               <Link
-                                to={`/journeys/${journeyId}/events/${eventItem.id}`}
+                                to={eventPath(eventItem.id)}
                                 className="min-w-0 flex-1 transition hover:opacity-80"
                               >
                                 {timeLabel && (
@@ -232,27 +256,29 @@ export function JourneyDetailPage() {
                                   </div>
                                 )}
                               </Link>
-                              <div className="flex shrink-0 items-center gap-3">
-                                <Link
-                                  to={`/journeys/${journeyId}/events/${eventItem.id}/edit`}
-                                  className="border border-[var(--color-line)] px-4 py-2 text-[11px] font-medium tracking-[0.2em] text-[var(--color-ink)] uppercase transition hover:border-[var(--color-sea)]"
-                                >
-                                  Edit
-                                </Link>
-                                <button
-                                  type="button"
-                                  onClick={() =>
-                                    setPendingDelete({
-                                      id: eventItem.id,
-                                      title: eventItem.title,
-                                    })
-                                  }
-                                  disabled={deleteMutation.isPending}
-                                  className="border border-[var(--color-danger)] px-4 py-2 text-[11px] font-medium tracking-[0.2em] text-[var(--color-danger)] uppercase transition hover:bg-[color-mix(in_srgb,var(--color-danger)_8%,white)] disabled:cursor-not-allowed disabled:opacity-60"
-                                >
-                                  Delete
-                                </button>
-                              </div>
+                              {!readOnly && (
+                                <div className="flex shrink-0 items-center gap-3">
+                                  <Link
+                                    to={`/journeys/${journeyId}/events/${eventItem.id}/edit`}
+                                    className="border border-[var(--color-line)] px-4 py-2 text-[11px] font-medium tracking-[0.2em] text-[var(--color-ink)] uppercase transition hover:border-[var(--color-sea)]"
+                                  >
+                                    Edit
+                                  </Link>
+                                  <button
+                                    type="button"
+                                    onClick={() =>
+                                      setPendingDelete({
+                                        id: eventItem.id,
+                                        title: eventItem.title,
+                                      })
+                                    }
+                                    disabled={deleteMutation.isPending}
+                                    className="border border-[var(--color-danger)] px-4 py-2 text-[11px] font-medium tracking-[0.2em] text-[var(--color-danger)] uppercase transition hover:bg-[color-mix(in_srgb,var(--color-danger)_8%,white)] disabled:cursor-not-allowed disabled:opacity-60"
+                                  >
+                                    Delete
+                                  </button>
+                                </div>
+                              )}
                             </div>
                           </div>
                         </li>
@@ -266,22 +292,24 @@ export function JourneyDetailPage() {
         )}
       </main>
 
-      <ConfirmDialog
-        open={pendingDelete != null}
-        title={pendingDelete ? `Delete “${pendingDelete.title}”?` : 'Delete event?'}
-        description="This cannot be undone. Photos on this event will be removed."
-        busy={deleteMutation.isPending}
-        onCancel={() => {
-          if (!deleteMutation.isPending) {
-            setPendingDelete(null)
-          }
-        }}
-        onConfirm={() => {
-          if (pendingDelete) {
-            deleteMutation.mutate(pendingDelete.id)
-          }
-        }}
-      />
+      {!readOnly && (
+        <ConfirmDialog
+          open={pendingDelete != null}
+          title={pendingDelete ? `Delete “${pendingDelete.title}”?` : 'Delete event?'}
+          description="This cannot be undone. Photos on this event will be removed."
+          busy={deleteMutation.isPending}
+          onCancel={() => {
+            if (!deleteMutation.isPending) {
+              setPendingDelete(null)
+            }
+          }}
+          onConfirm={() => {
+            if (pendingDelete) {
+              deleteMutation.mutate(pendingDelete.id)
+            }
+          }}
+        />
+      )}
     </div>
   )
 }

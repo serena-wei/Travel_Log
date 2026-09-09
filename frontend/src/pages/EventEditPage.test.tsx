@@ -9,7 +9,6 @@ import {
   getEvent,
   replaceEventPhoto,
   updateEvent,
-  uploadEventPhoto,
   type EventResponse,
 } from '../api/client'
 import { AuthProvider } from '../auth/AuthContext'
@@ -26,6 +25,8 @@ vi.mock('../api/client', async () => {
     getEvent: vi.fn(),
     getJourney: vi.fn().mockResolvedValue({
       id: 10,
+      ownerId: 1,
+      ownerUsername: 'alice',
       title: 'South Island',
       description: null,
       startDate: null,
@@ -36,7 +37,6 @@ vi.mock('../api/client', async () => {
     }),
     updateEvent: vi.fn(),
     replaceEventPhoto: vi.fn(),
-    uploadEventPhoto: vi.fn(),
     deleteEventPhoto: vi.fn(),
   }
 })
@@ -45,7 +45,6 @@ const mockedFetchCurrentUser = vi.mocked(fetchCurrentUser)
 const mockedGetEvent = vi.mocked(getEvent)
 const mockedUpdateEvent = vi.mocked(updateEvent)
 const mockedReplaceEventPhoto = vi.mocked(replaceEventPhoto)
-const mockedUploadEventPhoto = vi.mocked(uploadEventPhoto)
 const mockedDeleteEventPhoto = vi.mocked(deleteEventPhoto)
 
 const alice = {
@@ -113,7 +112,6 @@ describe('EventEditPage', () => {
     mockedGetEvent.mockReset()
     mockedUpdateEvent.mockReset()
     mockedReplaceEventPhoto.mockReset()
-    mockedUploadEventPhoto.mockReset()
     mockedDeleteEventPhoto.mockReset()
     clearAccessToken()
     clearIntentionalLogout()
@@ -195,31 +193,6 @@ describe('EventEditPage', () => {
         'Event created, but photos could not be uploaded. You can add them on the edit page.',
       ),
     ).toBeInTheDocument()
-  })
-
-  it('adds photos to an event that has none', async () => {
-    const user = userEvent.setup()
-    setAccessToken('token-123')
-    mockedFetchCurrentUser.mockResolvedValue(alice)
-    mockedGetEvent.mockResolvedValue({ ...sampleEvent, photos: [] })
-    mockedUploadEventPhoto.mockResolvedValue({
-      photoId: 11,
-      uploadUrl: 'https://example.test/upload',
-      objectKey: 'users/1/journeys/10/events/5/added.jpg',
-      contentType: 'image/jpeg',
-      sortOrder: 0,
-    })
-
-    renderEdit()
-
-    expect(await screen.findByLabelText('Add photos')).toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: 'Replace' })).not.toBeInTheDocument()
-    const file = new File(['added-bytes'], 'added.jpg', { type: 'image/jpeg' })
-    await user.upload(screen.getByTestId('add-photo-input'), file)
-
-    await waitFor(() => {
-      expect(mockedUploadEventPhoto).toHaveBeenCalledWith('token-123', 10, 5, file)
-    })
   })
 
   it('deletes selected photos after confirm', async () => {

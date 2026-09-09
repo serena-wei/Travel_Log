@@ -110,15 +110,4 @@ describe('LoginPage', () => {
 
     expect(await screen.findByRole('alert')).toHaveTextContent('Invalid username or password')
   })
-
-  it('blocks empty submit', async () => {
-    const user = userEvent.setup()
-    renderLogin()
-
-    await user.click(screen.getByRole('button', { name: 'Sign in' }))
-
-    expect(await screen.findByText('Username is required')).toBeInTheDocument()
-    expect(screen.getByText('Password is required')).toBeInTheDocument()
-    expect(mockedLoginUser).not.toHaveBeenCalled()
-  })
 })

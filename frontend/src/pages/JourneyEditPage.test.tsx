@@ -49,6 +49,8 @@ const alice = {
 
 const sampleJourney: JourneyResponse = {
   id: 10,
+  ownerId: 1,
+  ownerUsername: 'alice',
   title: 'South Island',
   description: 'Road trip',
   startDate: '2026-01-10',

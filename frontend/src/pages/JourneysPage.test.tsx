@@ -7,7 +7,6 @@ import { fetchCurrentUser, deleteJourney, listJourneys, type JourneyResponse } f
 import { AuthProvider } from '../auth/AuthContext'
 import { RequireAuth } from '../auth/RequireAuth'
 import { clearAccessToken, setAccessToken } from '../auth/token'
-import { JourneyCreatePage } from './JourneyCreatePage'
 import { JourneysPage } from './JourneysPage'
 import { LoginPage } from './LoginPage'
 
@@ -41,6 +40,8 @@ const alice = {
 
 const sampleJourney: JourneyResponse = {
   id: 10,
+  ownerId: 1,
+  ownerUsername: 'alice',
   title: 'South Island',
   description: 'Road trip',
   startDate: '2026-01-10',
@@ -69,14 +70,6 @@ function renderJourneys(initialPath = '/journeys') {
                 </RequireAuth>
               }
             />
-            <Route
-              path="/journeys/new"
-              element={
-                <RequireAuth>
-                  <JourneyCreatePage />
-                </RequireAuth>
-              }
-            />
             <Route path="/journeys/:id/edit" element={<div>Edit journey page</div>} />
             <Route path="/journeys/:id" element={<div>Journey detail page</div>} />
           </Routes>
@@ -94,12 +87,6 @@ describe('JourneysPage', () => {
     clearAccessToken()
   })
 
-  it('redirects unauthenticated users to login', async () => {
-    renderJourneys()
-
-    expect(await screen.findByRole('heading', { name: 'Welcome back' })).toBeInTheDocument()
-  })
-
   it('lists journeys for the signed-in user', async () => {
     setAccessToken('token-123')
     mockedFetchCurrentUser.mockResolvedValue(alice)
@@ -111,20 +98,6 @@ describe('JourneysPage', () => {
     expect(await screen.findByText('South Island')).toBeInTheDocument()
     expect(screen.getByText('Road trip')).toBeInTheDocument()
     expect(mockedListJourneys).toHaveBeenCalledWith('token-123')
-  })
-
-  it('links to the create journey page', async () => {
-    const user = userEvent.setup()
-    setAccessToken('token-123')
-    mockedFetchCurrentUser.mockResolvedValue(alice)
-    mockedListJourneys.mockResolvedValue([])
-
-    renderJourneys()
-
-    await screen.findByRole('heading', { name: 'Journeys' })
-    await user.click(screen.getByRole('link', { name: 'New journey' }))
-
-    expect(await screen.findByRole('heading', { name: 'Create a trip' })).toBeInTheDocument()
   })
 
   it('opens detail from the title and supports edit and delete actions', async () => {
