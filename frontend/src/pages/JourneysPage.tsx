@@ -1,13 +1,16 @@
+import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { ApiError, deleteJourney, listJourneys } from '../api/client'
 import { queryKeys } from '../api/queryKeys'
 import { useAuth } from '../auth/useAuth'
+import { ConfirmDialog } from '../components/ConfirmDialog'
 
 export function JourneysPage() {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
   const { user, accessToken, logout } = useAuth()
+  const [pendingDelete, setPendingDelete] = useState<{ id: number; title: string } | null>(null)
 
   const journeysQuery = useQuery({
     queryKey: queryKeys.journeys.all,
@@ -18,6 +21,7 @@ export function JourneysPage() {
   const deleteMutation = useMutation({
     mutationFn: (journeyId: number) => deleteJourney(accessToken!, journeyId),
     onSuccess: async (_void, journeyId) => {
+      setPendingDelete(null)
       await queryClient.invalidateQueries({ queryKey: queryKeys.journeys.all })
       queryClient.removeQueries({ queryKey: queryKeys.journeys.detail(journeyId) })
       queryClient.removeQueries({ queryKey: queryKeys.events.all(journeyId) })
@@ -27,13 +31,6 @@ export function JourneysPage() {
   function handleLogout() {
     logout()
     void navigate('/', { replace: true })
-  }
-
-  function handleDelete(journeyId: number, title: string) {
-    if (!window.confirm(`Delete “${title}”? This cannot be undone.`)) {
-      return
-    }
-    deleteMutation.mutate(journeyId)
   }
 
   return (
@@ -153,7 +150,7 @@ export function JourneysPage() {
                     </Link>
                     <button
                       type="button"
-                      onClick={() => handleDelete(journey.id, journey.title)}
+                      onClick={() => setPendingDelete({ id: journey.id, title: journey.title })}
                       disabled={deleteMutation.isPending}
                       className="border border-[var(--color-danger)] px-4 py-2 text-[11px] font-medium tracking-[0.2em] text-[var(--color-danger)] uppercase transition hover:bg-[color-mix(in_srgb,var(--color-danger)_8%,white)] disabled:cursor-not-allowed disabled:opacity-60"
                     >
@@ -166,6 +163,23 @@ export function JourneysPage() {
           )}
         </section>
       </main>
+
+      <ConfirmDialog
+        open={pendingDelete != null}
+        title={pendingDelete ? `Delete “${pendingDelete.title}”?` : 'Delete journey?'}
+        description="This cannot be undone. Events and photos on this journey will be removed."
+        busy={deleteMutation.isPending}
+        onCancel={() => {
+          if (!deleteMutation.isPending) {
+            setPendingDelete(null)
+          }
+        }}
+        onConfirm={() => {
+          if (pendingDelete) {
+            deleteMutation.mutate(pendingDelete.id)
+          }
+        }}
+      />
     </div>
   )
 }

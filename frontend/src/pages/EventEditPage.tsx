@@ -20,6 +20,7 @@ import {
   toDatetimeLocalValue,
 } from './datetimeLocal'
 import { EventPhotoReplaceList } from './EventPhotoReplaceList'
+import { ConfirmDialog } from '../components/ConfirmDialog'
 
 type FieldErrors = Partial<Record<'title' | 'startAt' | 'endAt', string>>
 
@@ -39,6 +40,7 @@ export function EventEditPage() {
   const [formError, setFormError] = useState<string | null>(null)
   const [photoError, setPhotoError] = useState<string | null>(null)
   const [isFormReady, setIsFormReady] = useState(false)
+  const [pendingPhotoDelete, setPendingPhotoDelete] = useState<number | null>(null)
 
   const invalidIds =
     !Number.isFinite(journeyId) ||
@@ -167,6 +169,7 @@ export function EventEditPage() {
       setPhotoError(null)
     },
     onSuccess: async () => {
+      setPendingPhotoDelete(null)
       await invalidatePhotoQueries()
     },
     onError: (error: Error) => {
@@ -179,10 +182,7 @@ export function EventEditPage() {
   })
 
   function handleDeletePhoto(photoId: number) {
-    if (!window.confirm('Delete this photo? This cannot be undone.')) {
-      return
-    }
-    deletePhotoMutation.mutate(photoId)
+    setPendingPhotoDelete(photoId)
   }
 
   const photoBusy =
@@ -396,6 +396,23 @@ export function EventEditPage() {
           </>
         )}
       </main>
+
+      <ConfirmDialog
+        open={pendingPhotoDelete != null}
+        title="Delete this photo?"
+        description="This cannot be undone. The image will be removed from this event."
+        busy={deletePhotoMutation.isPending}
+        onCancel={() => {
+          if (!deletePhotoMutation.isPending) {
+            setPendingPhotoDelete(null)
+          }
+        }}
+        onConfirm={() => {
+          if (pendingPhotoDelete != null) {
+            deletePhotoMutation.mutate(pendingPhotoDelete)
+          }
+        }}
+      />
     </div>
   )
 }

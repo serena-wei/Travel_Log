@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react'
+import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
@@ -204,7 +204,6 @@ describe('EventEditPage', () => {
 
   it('deletes an existing photo after confirm', async () => {
     const user = userEvent.setup()
-    const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(true)
     setAccessToken('token-123')
     mockedFetchCurrentUser.mockResolvedValue(alice)
     mockedGetEvent.mockResolvedValue(sampleEvent)
@@ -213,12 +212,11 @@ describe('EventEditPage', () => {
     renderEdit()
 
     await user.click(await screen.findByRole('button', { name: 'Delete' }))
+    const dialog = await screen.findByRole('alertdialog')
+    await user.click(within(dialog).getByRole('button', { name: 'Delete' }))
 
     await waitFor(() => {
-      expect(confirmSpy).toHaveBeenCalled()
       expect(mockedDeleteEventPhoto).toHaveBeenCalledWith('token-123', 10, 5, 9)
     })
-
-    confirmSpy.mockRestore()
   })
 })

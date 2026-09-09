@@ -1,8 +1,10 @@
+import { useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { ApiError, deleteEvent, getJourney, listEvents } from '../api/client'
 import { queryKeys } from '../api/queryKeys'
 import { useAuth } from '../auth/useAuth'
+import { ConfirmDialog } from '../components/ConfirmDialog'
 
 export function JourneyDetailPage() {
   const { id } = useParams()
@@ -10,6 +12,7 @@ export function JourneyDetailPage() {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
   const { accessToken, logout } = useAuth()
+  const [pendingDelete, setPendingDelete] = useState<{ id: number; title: string } | null>(null)
 
   const journeyQuery = useQuery({
     queryKey: queryKeys.journeys.detail(journeyId),
@@ -26,6 +29,7 @@ export function JourneyDetailPage() {
   const deleteMutation = useMutation({
     mutationFn: (eventId: number) => deleteEvent(accessToken!, journeyId, eventId),
     onSuccess: async (_void, eventId) => {
+      setPendingDelete(null)
       await queryClient.invalidateQueries({ queryKey: queryKeys.events.all(journeyId) })
       queryClient.removeQueries({ queryKey: queryKeys.events.detail(journeyId, eventId) })
     },
@@ -34,13 +38,6 @@ export function JourneyDetailPage() {
   function handleLogout() {
     logout()
     void navigate('/', { replace: true })
-  }
-
-  function handleDeleteEvent(eventId: number, title: string) {
-    if (!window.confirm(`Delete “${title}”? This cannot be undone.`)) {
-      return
-    }
-    deleteMutation.mutate(eventId)
   }
 
   const invalidId = !Number.isFinite(journeyId) || journeyId <= 0
@@ -220,7 +217,9 @@ export function JourneyDetailPage() {
                           </Link>
                           <button
                             type="button"
-                            onClick={() => handleDeleteEvent(eventItem.id, eventItem.title)}
+                            onClick={() =>
+                              setPendingDelete({ id: eventItem.id, title: eventItem.title })
+                            }
                             disabled={deleteMutation.isPending}
                             className="border border-[var(--color-danger)] px-4 py-2 text-[11px] font-medium tracking-[0.2em] text-[var(--color-danger)] uppercase transition hover:bg-[color-mix(in_srgb,var(--color-danger)_8%,white)] disabled:cursor-not-allowed disabled:opacity-60"
                           >
@@ -236,6 +235,23 @@ export function JourneyDetailPage() {
           </>
         )}
       </main>
+
+      <ConfirmDialog
+        open={pendingDelete != null}
+        title={pendingDelete ? `Delete “${pendingDelete.title}”?` : 'Delete event?'}
+        description="This cannot be undone. Photos on this event will be removed."
+        busy={deleteMutation.isPending}
+        onCancel={() => {
+          if (!deleteMutation.isPending) {
+            setPendingDelete(null)
+          }
+        }}
+        onConfirm={() => {
+          if (pendingDelete) {
+            deleteMutation.mutate(pendingDelete.id)
+          }
+        }}
+      />
     </div>
   )
 }
