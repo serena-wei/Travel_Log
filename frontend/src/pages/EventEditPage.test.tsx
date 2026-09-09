@@ -134,7 +134,7 @@ describe('EventEditPage', () => {
 
     expect(await screen.findByDisplayValue('Flight NZ5373')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Replace' })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Delete' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Delete selected' })).toBeInTheDocument()
     expect(screen.getByLabelText('Add photos')).toBeInTheDocument()
     await user.clear(screen.getByLabelText(/Title/i))
     await user.type(screen.getByLabelText(/Title/i), 'Flight Updated')
@@ -202,21 +202,38 @@ describe('EventEditPage', () => {
     })
   })
 
-  it('deletes an existing photo after confirm', async () => {
+  it('deletes selected photos after confirm', async () => {
     const user = userEvent.setup()
     setAccessToken('token-123')
     mockedFetchCurrentUser.mockResolvedValue(alice)
-    mockedGetEvent.mockResolvedValue(sampleEvent)
+    mockedGetEvent.mockResolvedValue({
+      ...sampleEvent,
+      photos: [
+        sampleEvent.photos[0],
+        {
+          id: 10,
+          url: 'https://example.test/photo-2.jpg',
+          contentType: 'image/jpeg',
+          sizeBytes: 1200,
+          sortOrder: 1,
+          createdAt: '2026-09-08T00:00:00Z',
+        },
+      ],
+    })
     mockedDeleteEventPhoto.mockResolvedValue()
 
     renderEdit()
 
-    await user.click(await screen.findByRole('button', { name: 'Delete' }))
+    await user.click(await screen.findByRole('button', { name: 'Select photo 9' }))
+    await user.click(screen.getByRole('button', { name: 'Select photo 10' }))
+    await user.click(screen.getByRole('button', { name: 'Delete selected (2)' }))
     const dialog = await screen.findByRole('alertdialog')
+    expect(dialog).toHaveTextContent('Delete 2 photos?')
     await user.click(within(dialog).getByRole('button', { name: 'Delete' }))
 
     await waitFor(() => {
       expect(mockedDeleteEventPhoto).toHaveBeenCalledWith('token-123', 10, 5, 9)
+      expect(mockedDeleteEventPhoto).toHaveBeenCalledWith('token-123', 10, 5, 10)
     })
   })
 })

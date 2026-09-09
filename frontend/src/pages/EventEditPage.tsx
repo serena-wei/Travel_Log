@@ -40,7 +40,7 @@ export function EventEditPage() {
   const [formError, setFormError] = useState<string | null>(null)
   const [photoError, setPhotoError] = useState<string | null>(null)
   const [isFormReady, setIsFormReady] = useState(false)
-  const [pendingPhotoDelete, setPendingPhotoDelete] = useState<number | null>(null)
+  const [pendingPhotoDeleteIds, setPendingPhotoDeleteIds] = useState<number[]>([])
 
   const invalidIds =
     !Number.isFinite(journeyId) ||
@@ -143,9 +143,9 @@ export function EventEditPage() {
 
   const addPhotosMutation = useMutation({
     mutationFn: async (files: File[]) => {
-      for (const file of files) {
-        await uploadEventPhoto(accessToken!, journeyId, eventId, file)
-      }
+      await Promise.all(
+        files.map((file) => uploadEventPhoto(accessToken!, journeyId, eventId, file)),
+      )
     },
     onMutate: () => {
       setPhotoError(null)
@@ -162,33 +162,38 @@ export function EventEditPage() {
     },
   })
 
-  const deletePhotoMutation = useMutation({
-    mutationFn: (photoId: number) =>
-      deleteEventPhoto(accessToken!, journeyId, eventId, photoId),
+  const deletePhotosMutation = useMutation({
+    mutationFn: async (photoIds: number[]) => {
+      await Promise.all(
+        photoIds.map((photoId) =>
+          deleteEventPhoto(accessToken!, journeyId, eventId, photoId),
+        ),
+      )
+    },
     onMutate: () => {
       setPhotoError(null)
     },
     onSuccess: async () => {
-      setPendingPhotoDelete(null)
+      setPendingPhotoDeleteIds([])
       await invalidatePhotoQueries()
     },
     onError: (error: Error) => {
       setPhotoError(
         error instanceof ApiError
           ? error.message
-          : 'Unable to delete photo right now. Please try again.',
+          : 'Unable to delete photos right now. Please try again.',
       )
     },
   })
 
-  function handleDeletePhoto(photoId: number) {
-    setPendingPhotoDelete(photoId)
+  function handleDeleteSelected(photoIds: number[]) {
+    setPendingPhotoDeleteIds(photoIds)
   }
 
   const photoBusy =
     replacePhotoMutation.isPending ||
     addPhotosMutation.isPending ||
-    deletePhotoMutation.isPending
+    deletePhotosMutation.isPending
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -359,15 +364,11 @@ export function EventEditPage() {
                     ? (replacePhotoMutation.variables?.photoId ?? null)
                     : null
                 }
-                deletingPhotoId={
-                  deletePhotoMutation.isPending
-                    ? (deletePhotoMutation.variables ?? null)
-                    : null
-                }
                 isAdding={addPhotosMutation.isPending}
+                isDeleting={deletePhotosMutation.isPending}
                 onReplace={(photoId, file) => replacePhotoMutation.mutate({ photoId, file })}
                 onAdd={(files) => addPhotosMutation.mutate(files)}
-                onDelete={handleDeletePhoto}
+                onDeleteSelected={handleDeleteSelected}
                 error={photoError}
               />
 
@@ -398,18 +399,22 @@ export function EventEditPage() {
       </main>
 
       <ConfirmDialog
-        open={pendingPhotoDelete != null}
-        title="Delete this photo?"
-        description="This cannot be undone. The image will be removed from this event."
-        busy={deletePhotoMutation.isPending}
+        open={pendingPhotoDeleteIds.length > 0}
+        title={
+          pendingPhotoDeleteIds.length === 1
+            ? 'Delete this photo?'
+            : `Delete ${pendingPhotoDeleteIds.length} photos?`
+        }
+        description="This cannot be undone. Selected images will be removed from this event."
+        busy={deletePhotosMutation.isPending}
         onCancel={() => {
-          if (!deletePhotoMutation.isPending) {
-            setPendingPhotoDelete(null)
+          if (!deletePhotosMutation.isPending) {
+            setPendingPhotoDeleteIds([])
           }
         }}
         onConfirm={() => {
-          if (pendingPhotoDelete != null) {
-            deletePhotoMutation.mutate(pendingPhotoDelete)
+          if (pendingPhotoDeleteIds.length > 0) {
+            deletePhotosMutation.mutate(pendingPhotoDeleteIds)
           }
         }}
       />
