@@ -394,3 +394,56 @@ export async function uploadEventPhoto(
   }
   return presigned
 }
+
+export async function replaceEventPhoto(
+  accessToken: string,
+  journeyId: number,
+  eventId: number,
+  photoId: number,
+  file: File,
+): Promise<PresignPhotoResponse> {
+  const contentType = file.type || 'image/jpeg'
+  const response = await fetch(
+    `${API_BASE_URL}${API_V1}/journeys/${journeyId}/events/${eventId}/photos/${photoId}/presign-replace`,
+    {
+      method: 'POST',
+      headers: authJsonHeaders(accessToken),
+      body: JSON.stringify({
+        contentType,
+        sizeBytes: file.size,
+        fileName: file.name,
+      }),
+    },
+  )
+  if (!response.ok) {
+    throw await parseApiError(response)
+  }
+  const presigned = (await response.json()) as PresignPhotoResponse
+  const uploadResponse = await fetch(presigned.uploadUrl, {
+    method: 'PUT',
+    headers: { 'Content-Type': contentType },
+    body: file,
+  })
+  if (!uploadResponse.ok) {
+    throw new Error(`Photo replace upload failed (${uploadResponse.status})`)
+  }
+  return presigned
+}
+
+export async function deleteEventPhoto(
+  accessToken: string,
+  journeyId: number,
+  eventId: number,
+  photoId: number,
+): Promise<void> {
+  const response = await fetch(
+    `${API_BASE_URL}${API_V1}/journeys/${journeyId}/events/${eventId}/photos/${photoId}`,
+    {
+      method: 'DELETE',
+      headers: authHeaders(accessToken),
+    },
+  )
+  if (!response.ok) {
+    throw await parseApiError(response)
+  }
+}

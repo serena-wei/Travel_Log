@@ -115,7 +115,7 @@ export function JourneyEditPage() {
   return (
     <div className="min-h-svh bg-[var(--color-fog)]">
       <header className="border-b border-[var(--color-line)] bg-[var(--color-paper)]">
-        <div className="mx-auto flex max-w-3xl items-center justify-between gap-4 px-6 py-5 sm:px-10">
+        <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-6 py-5 sm:px-10">
           <Link
             to="/"
             className="font-[family-name:var(--font-display)] text-2xl font-medium tracking-[0.18em] uppercase"
@@ -132,7 +132,7 @@ export function JourneyEditPage() {
         </div>
       </header>
 
-      <main className="mx-auto max-w-3xl px-6 py-12 sm:px-10 sm:py-16">
+      <main className="mx-auto max-w-6xl px-6 py-12 sm:px-10 sm:py-16">
         {invalidId && (
           <p role="alert" className="text-sm text-[var(--color-danger)]">
             Journey not found

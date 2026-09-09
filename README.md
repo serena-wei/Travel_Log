@@ -71,8 +71,10 @@ If port `5432` is already taken by a local Postgres, stop that service or change
 | `GET/POST` | `/api/v1/journeys/{journeyId}/events` | Bearer (journey owner) |
 | `GET/PUT/DELETE` | `/api/v1/journeys/{journeyId}/events/{eventId}` | Bearer (journey owner) |
 | `POST` | `/api/v1/journeys/{journeyId}/events/{eventId}/photos/presign` | Bearer (journey owner) |
+| `POST` | `/api/v1/journeys/{journeyId}/events/{eventId}/photos/{photoId}/presign-replace` | Bearer (journey owner) |
+| `DELETE` | `/api/v1/journeys/{journeyId}/events/{eventId}/photos/{photoId}` | Bearer (journey owner) |
 
-Journeys default to `PRIVATE`. Missing or non-owned journeys return `404` with `JOURNEY_NOT_FOUND`. Events include title, description, start/end time, and up to **10 photos** (JPEG/PNG/WebP, 5MB each) via S3 presigned upload. Missing events return `EVENT_NOT_FOUND`. Photo edit/delete UI comes later.
+Journeys default to `PRIVATE`. Missing or non-owned journeys return `404` with `JOURNEY_NOT_FOUND`. Events include title, description, start/end time, and up to **10 photos** (JPEG/PNG/WebP, 5MB each) via S3 presigned upload. Missing events return `EVENT_NOT_FOUND`. Event edit supports adding, replacing, and deleting photos.
 
 ### S3 photos (local)
 

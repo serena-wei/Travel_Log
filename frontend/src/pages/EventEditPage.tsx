@@ -2,7 +2,15 @@ import { useEffect, useState } from 'react'
 import type { FormEvent } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { ApiError, getEvent, getJourney, updateEvent } from '../api/client'
+import {
+  ApiError,
+  deleteEventPhoto,
+  getEvent,
+  getJourney,
+  replaceEventPhoto,
+  updateEvent,
+  uploadEventPhoto,
+} from '../api/client'
 import { queryKeys } from '../api/queryKeys'
 import { useAuth } from '../auth/useAuth'
 import {
@@ -11,6 +19,7 @@ import {
   journeyDateTimeMin,
   toDatetimeLocalValue,
 } from './datetimeLocal'
+import { EventPhotoReplaceList } from './EventPhotoReplaceList'
 
 type FieldErrors = Partial<Record<'title' | 'startAt' | 'endAt', string>>
 
@@ -28,6 +37,7 @@ export function EventEditPage() {
   const [endAt, setEndAt] = useState('')
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({})
   const [formError, setFormError] = useState<string | null>(null)
+  const [photoError, setPhotoError] = useState<string | null>(null)
   const [isFormReady, setIsFormReady] = useState(false)
 
   const invalidIds =
@@ -104,6 +114,82 @@ export function EventEditPage() {
     },
   })
 
+  async function invalidatePhotoQueries() {
+    await queryClient.invalidateQueries({
+      queryKey: queryKeys.events.detail(journeyId, eventId),
+    })
+    await queryClient.invalidateQueries({ queryKey: queryKeys.events.all(journeyId) })
+  }
+
+  const replacePhotoMutation = useMutation({
+    mutationFn: ({ photoId, file }: { photoId: number; file: File }) =>
+      replaceEventPhoto(accessToken!, journeyId, eventId, photoId, file),
+    onMutate: () => {
+      setPhotoError(null)
+    },
+    onSuccess: async () => {
+      await invalidatePhotoQueries()
+    },
+    onError: (error: Error) => {
+      setPhotoError(
+        error instanceof ApiError
+          ? error.message
+          : 'Unable to replace photo right now. Please try again.',
+      )
+    },
+  })
+
+  const addPhotosMutation = useMutation({
+    mutationFn: async (files: File[]) => {
+      for (const file of files) {
+        await uploadEventPhoto(accessToken!, journeyId, eventId, file)
+      }
+    },
+    onMutate: () => {
+      setPhotoError(null)
+    },
+    onSuccess: async () => {
+      await invalidatePhotoQueries()
+    },
+    onError: (error: Error) => {
+      setPhotoError(
+        error instanceof ApiError
+          ? error.message
+          : 'Unable to add photos right now. Please try again.',
+      )
+    },
+  })
+
+  const deletePhotoMutation = useMutation({
+    mutationFn: (photoId: number) =>
+      deleteEventPhoto(accessToken!, journeyId, eventId, photoId),
+    onMutate: () => {
+      setPhotoError(null)
+    },
+    onSuccess: async () => {
+      await invalidatePhotoQueries()
+    },
+    onError: (error: Error) => {
+      setPhotoError(
+        error instanceof ApiError
+          ? error.message
+          : 'Unable to delete photo right now. Please try again.',
+      )
+    },
+  })
+
+  function handleDeletePhoto(photoId: number) {
+    if (!window.confirm('Delete this photo? This cannot be undone.')) {
+      return
+    }
+    deletePhotoMutation.mutate(photoId)
+  }
+
+  const photoBusy =
+    replacePhotoMutation.isPending ||
+    addPhotosMutation.isPending ||
+    deletePhotoMutation.isPending
+
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
 
@@ -154,7 +240,7 @@ export function EventEditPage() {
   return (
     <div className="min-h-svh bg-[var(--color-fog)]">
       <header className="border-b border-[var(--color-line)] bg-[var(--color-paper)]">
-        <div className="mx-auto flex max-w-3xl items-center justify-between gap-4 px-6 py-5 sm:px-10">
+        <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-6 py-5 sm:px-10">
           <Link
             to="/"
             className="font-[family-name:var(--font-display)] text-2xl font-medium tracking-[0.18em] uppercase"
@@ -171,7 +257,7 @@ export function EventEditPage() {
         </div>
       </header>
 
-      <main className="mx-auto max-w-3xl px-6 py-12 sm:px-10 sm:py-16">
+      <main className="mx-auto max-w-6xl px-6 py-12 sm:px-10 sm:py-16">
         {invalidIds && (
           <p role="alert" className="text-sm text-[var(--color-danger)]">
             Event not found
@@ -265,6 +351,26 @@ export function EventEditPage() {
                 />
               </div>
 
+              <EventPhotoReplaceList
+                photos={eventQuery.data.photos}
+                disabled={updateMutation.isPending}
+                replacingPhotoId={
+                  replacePhotoMutation.isPending
+                    ? (replacePhotoMutation.variables?.photoId ?? null)
+                    : null
+                }
+                deletingPhotoId={
+                  deletePhotoMutation.isPending
+                    ? (deletePhotoMutation.variables ?? null)
+                    : null
+                }
+                isAdding={addPhotosMutation.isPending}
+                onReplace={(photoId, file) => replacePhotoMutation.mutate({ photoId, file })}
+                onAdd={(files) => addPhotosMutation.mutate(files)}
+                onDelete={handleDeletePhoto}
+                error={photoError}
+              />
+
               {formError && (
                 <p role="alert" className="mb-4 text-sm text-[var(--color-danger)]">
                   {formError}
@@ -274,7 +380,7 @@ export function EventEditPage() {
               <div className="mt-2 flex flex-wrap gap-3">
                 <button
                   type="submit"
-                  disabled={updateMutation.isPending}
+                  disabled={updateMutation.isPending || photoBusy}
                   className="bg-[var(--color-sea)] px-6 py-3.5 text-[11px] font-medium tracking-[0.2em] !text-white uppercase transition hover:bg-[var(--color-sea-deep)] disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   {updateMutation.isPending ? 'Saving…' : 'Save changes'}
