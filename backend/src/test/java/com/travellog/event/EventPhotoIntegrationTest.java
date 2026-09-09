@@ -1,5 +1,8 @@
 package com.travellog.event;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.hamcrest.Matchers.not;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -81,6 +84,107 @@ class EventPhotoIntegrationTest {
 	}
 
 	@Test
+	void replacePresignUpdatesMetadataAndKeepsSortOrder() throws Exception {
+		String token = loginAndGetToken("alice", "Secret123");
+		Long journeyId = createJourney(token);
+		Long eventId = createEvent(token, journeyId);
+
+		MvcResult first = mockMvc.perform(post("/api/v1/journeys/" + journeyId + "/events/" + eventId + "/photos/presign")
+						.header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("""
+								{
+								  "contentType": "image/jpeg",
+								  "sizeBytes": 1000,
+								  "fileName": "old.jpg"
+								}
+								"""))
+				.andExpect(status().isCreated())
+				.andReturn();
+		JsonNode firstBody = objectMapper.readTree(first.getResponse().getContentAsString());
+		Long photoId = firstBody.get("photoId").asLong();
+		String previousKey = firstBody.get("objectKey").asString();
+
+		presign(token, journeyId, eventId);
+
+		mockMvc.perform(post("/api/v1/journeys/" + journeyId + "/events/" + eventId + "/photos/" + photoId
+						+ "/presign-replace")
+						.header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("""
+								{
+								  "contentType": "image/png",
+								  "sizeBytes": 2048,
+								  "fileName": "new.png"
+								}
+								"""))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.photoId").value(photoId.intValue()))
+				.andExpect(jsonPath("$.contentType").value("image/png"))
+				.andExpect(jsonPath("$.sortOrder").value(0))
+				.andExpect(jsonPath("$.uploadUrl").isString())
+				.andExpect(jsonPath("$.objectKey").isString())
+				.andExpect(jsonPath("$.objectKey").value(not(previousKey)));
+
+		EventPhoto replaced = eventPhotoRepository.findById(photoId).orElseThrow();
+		assertThat(replaced.getContentType()).isEqualTo("image/png");
+		assertThat(replaced.getSizeBytes()).isEqualTo(2048L);
+		assertThat(replaced.getSortOrder()).isEqualTo(0);
+		assertThat(eventPhotoRepository.countByEventId(eventId)).isEqualTo(2);
+	}
+
+	@Test
+	void replaceMissingPhotoReturnsNotFound() throws Exception {
+		String token = loginAndGetToken("alice", "Secret123");
+		Long journeyId = createJourney(token);
+		Long eventId = createEvent(token, journeyId);
+
+		mockMvc.perform(post("/api/v1/journeys/" + journeyId + "/events/" + eventId + "/photos/999999/presign-replace")
+						.header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("""
+								{
+								  "contentType": "image/jpeg",
+								  "sizeBytes": 1000
+								}
+								"""))
+				.andExpect(status().isNotFound())
+				.andExpect(jsonPath("$.code").value("PHOTO_NOT_FOUND"));
+	}
+
+	@Test
+	void deletePhotoRemovesRowAndResequencesSortOrder() throws Exception {
+		String token = loginAndGetToken("alice", "Secret123");
+		Long journeyId = createJourney(token);
+		Long eventId = createEvent(token, journeyId);
+
+		Long firstId = presignAndGetId(token, journeyId, eventId);
+		Long secondId = presignAndGetId(token, journeyId, eventId);
+		Long thirdId = presignAndGetId(token, journeyId, eventId);
+
+		mockMvc.perform(delete("/api/v1/journeys/" + journeyId + "/events/" + eventId + "/photos/" + secondId)
+						.header(HttpHeaders.AUTHORIZATION, "Bearer " + token))
+				.andExpect(status().isNoContent());
+
+		assertThat(eventPhotoRepository.findById(secondId)).isEmpty();
+		assertThat(eventPhotoRepository.countByEventId(eventId)).isEqualTo(2);
+		assertThat(eventPhotoRepository.findById(firstId).orElseThrow().getSortOrder()).isEqualTo(0);
+		assertThat(eventPhotoRepository.findById(thirdId).orElseThrow().getSortOrder()).isEqualTo(1);
+	}
+
+	@Test
+	void deleteMissingPhotoReturnsNotFound() throws Exception {
+		String token = loginAndGetToken("alice", "Secret123");
+		Long journeyId = createJourney(token);
+		Long eventId = createEvent(token, journeyId);
+
+		mockMvc.perform(delete("/api/v1/journeys/" + journeyId + "/events/" + eventId + "/photos/999999")
+						.header(HttpHeaders.AUTHORIZATION, "Bearer " + token))
+				.andExpect(status().isNotFound())
+				.andExpect(jsonPath("$.code").value("PHOTO_NOT_FOUND"));
+	}
+
+	@Test
 	void rejectsMoreThanTenPhotos() throws Exception {
 		String token = loginAndGetToken("alice", "Secret123");
 		Long journeyId = createJourney(token);
@@ -138,7 +242,11 @@ class EventPhotoIntegrationTest {
 	}
 
 	private void presign(String token, Long journeyId, Long eventId) throws Exception {
-		mockMvc.perform(post("/api/v1/journeys/" + journeyId + "/events/" + eventId + "/photos/presign")
+		presignAndGetId(token, journeyId, eventId);
+	}
+
+	private Long presignAndGetId(String token, Long journeyId, Long eventId) throws Exception {
+		MvcResult result = mockMvc.perform(post("/api/v1/journeys/" + journeyId + "/events/" + eventId + "/photos/presign")
 						.header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
 						.contentType(MediaType.APPLICATION_JSON)
 						.content("""
@@ -148,7 +256,9 @@ class EventPhotoIntegrationTest {
 								  "fileName": "shot.jpg"
 								}
 								"""))
-				.andExpect(status().isCreated());
+				.andExpect(status().isCreated())
+				.andReturn();
+		return objectMapper.readTree(result.getResponse().getContentAsString()).get("photoId").asLong();
 	}
 
 	private void register(String username, String email, String password) throws Exception {
