@@ -3,12 +3,12 @@ import userEvent from '@testing-library/user-event'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { ApiError, listJourneys, loginUser } from '../api/client'
+import { ApiError, loginUser } from '../api/client'
 import { AuthProvider } from '../auth/AuthContext'
 import { RequireAuth } from '../auth/RequireAuth'
 import { clearAccessToken } from '../auth/token'
 import { clearIntentionalLogout } from '../auth/intentionalLogout'
-import { JourneysPage } from './JourneysPage'
+import { DashboardPage } from './DashboardPage'
 import { LoginPage } from './LoginPage'
 
 vi.mock('../api/client', async () => {
@@ -17,12 +17,10 @@ vi.mock('../api/client', async () => {
     ...actual,
     loginUser: vi.fn(),
     fetchCurrentUser: vi.fn(),
-    listJourneys: vi.fn().mockResolvedValue([]),
   }
 })
 
 const mockedLoginUser = vi.mocked(loginUser)
-const mockedListJourneys = vi.mocked(listJourneys)
 
 function renderLogin() {
   const client = new QueryClient({
@@ -36,10 +34,10 @@ function renderLogin() {
           <Routes>
             <Route path="/login" element={<LoginPage />} />
             <Route
-              path="/journeys"
+              path="/dashboard"
               element={
                 <RequireAuth>
-                  <JourneysPage />
+                  <DashboardPage />
                 </RequireAuth>
               }
             />
@@ -53,13 +51,11 @@ function renderLogin() {
 describe('LoginPage', () => {
   beforeEach(() => {
     mockedLoginUser.mockReset()
-    mockedListJourneys.mockReset()
-    mockedListJourneys.mockResolvedValue([])
     clearAccessToken()
     clearIntentionalLogout()
   })
 
-  it('signs in and navigates to journeys', async () => {
+  it('signs in and navigates to the dashboard', async () => {
     const user = userEvent.setup()
     mockedLoginUser.mockResolvedValue({
       accessToken: 'token-123',
@@ -87,7 +83,7 @@ describe('LoginPage', () => {
       username: 'alice',
       password: 'Secret123',
     })
-    expect(await screen.findByRole('heading', { name: 'Journeys' })).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: 'Your dashboard' })).toBeInTheDocument()
     expect(screen.getByText('alice')).toBeInTheDocument()
   })
 

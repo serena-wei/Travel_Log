@@ -1,5 +1,6 @@
 import { Route, Routes } from 'react-router-dom'
 import { RequireAuth } from './auth/RequireAuth'
+import { DashboardPage } from './pages/DashboardPage'
 import { EventCreatePage } from './pages/EventCreatePage'
 import { EventDetailPage } from './pages/EventDetailPage'
 import { EventEditPage } from './pages/EventEditPage'
@@ -18,6 +19,14 @@ export default function App() {
       <Route path="/" element={<HomePage />} />
       <Route path="/login" element={<LoginPage />} />
       <Route path="/register" element={<RegisterPage />} />
+      <Route
+        path="/dashboard"
+        element={
+          <RequireAuth>
+            <DashboardPage />
+          </RequireAuth>
+        }
+      />
       <Route
         path="/explore"
         element={
