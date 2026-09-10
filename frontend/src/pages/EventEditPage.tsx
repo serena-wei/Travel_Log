@@ -19,6 +19,7 @@ import {
   journeyDateTimeMin,
   toDatetimeLocalValue,
 } from './datetimeLocal'
+import { AppHeader } from '../components/AppHeader'
 import { ConfirmDialog } from '../components/ConfirmDialog'
 import {
   EVENT_PHOTO_UPLOAD_WARNING_STATE_KEY,
@@ -35,7 +36,7 @@ export function EventEditPage() {
   const navigate = useNavigate()
   const location = useLocation()
   const queryClient = useQueryClient()
-  const { accessToken, logout } = useAuth()
+  const { accessToken } = useAuth()
 
   const locationWarning = (location.state as EventEditLocationState | null)?.[
     EVENT_PHOTO_UPLOAD_WARNING_STATE_KEY
@@ -248,11 +249,6 @@ export function EventEditPage() {
     updateMutation.mutate()
   }
 
-  function handleLogout() {
-    logout()
-    void navigate('/', { replace: true })
-  }
-
   const startMaxCandidates = [endAt || undefined, journeyMax].filter(Boolean) as string[]
   const startMax = startMaxCandidates.length > 0 ? startMaxCandidates.sort()[0] : undefined
   const endMinCandidates = [startAt || undefined, journeyMin].filter(Boolean) as string[]
@@ -261,23 +257,7 @@ export function EventEditPage() {
 
   return (
     <div className="min-h-svh bg-[var(--color-fog)]">
-      <header className="border-b border-[var(--color-line)] bg-[var(--color-paper)]">
-        <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-6 py-5 sm:px-10">
-          <Link
-            to="/"
-            className="font-[family-name:var(--font-display)] text-2xl font-medium tracking-[0.18em] uppercase"
-          >
-            TravelLog
-          </Link>
-          <button
-            type="button"
-            onClick={handleLogout}
-            className="border border-[var(--color-line)] px-4 py-2 text-[11px] font-medium tracking-[0.2em] text-[var(--color-ink)] uppercase transition hover:border-[var(--color-sea)]"
-          >
-            Sign out
-          </button>
-        </div>
-      </header>
+      <AppHeader />
 
       <main className="mx-auto max-w-6xl px-6 py-12 sm:px-10 sm:py-16">
         {invalidIds && (

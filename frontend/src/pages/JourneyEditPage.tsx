@@ -10,6 +10,7 @@ import {
 } from '../api/client'
 import { queryKeys } from '../api/queryKeys'
 import { useAuth } from '../auth/useAuth'
+import { AppHeader } from '../components/AppHeader'
 
 type FieldErrors = Partial<Record<'title' | 'startDate' | 'endDate', string>>
 
@@ -18,7 +19,7 @@ export function JourneyEditPage() {
   const journeyId = Number(id)
   const navigate = useNavigate()
   const queryClient = useQueryClient()
-  const { accessToken, logout } = useAuth()
+  const { accessToken } = useAuth()
 
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
@@ -105,32 +106,11 @@ export function JourneyEditPage() {
     updateMutation.mutate()
   }
 
-  function handleLogout() {
-    logout()
-    void navigate('/', { replace: true })
-  }
-
   const invalidId = !Number.isFinite(journeyId) || journeyId <= 0
 
   return (
     <div className="min-h-svh bg-[var(--color-fog)]">
-      <header className="border-b border-[var(--color-line)] bg-[var(--color-paper)]">
-        <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-6 py-5 sm:px-10">
-          <Link
-            to="/"
-            className="font-[family-name:var(--font-display)] text-2xl font-medium tracking-[0.18em] uppercase"
-          >
-            TravelLog
-          </Link>
-          <button
-            type="button"
-            onClick={handleLogout}
-            className="border border-[var(--color-line)] px-4 py-2 text-[11px] font-medium tracking-[0.2em] text-[var(--color-ink)] uppercase transition hover:border-[var(--color-sea)]"
-          >
-            Sign out
-          </button>
-        </div>
-      </header>
+      <AppHeader />
 
       <main className="mx-auto max-w-6xl px-6 py-12 sm:px-10 sm:py-16">
         {invalidId && (

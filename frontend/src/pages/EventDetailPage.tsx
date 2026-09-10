@@ -1,16 +1,16 @@
-import { Link, useLocation, useNavigate, useParams } from 'react-router-dom'
+import { Link, useLocation, useParams } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { ApiError, getEvent } from '../api/client'
 import { queryKeys } from '../api/queryKeys'
 import { useAuth } from '../auth/useAuth'
+import { AppHeader } from '../components/AppHeader'
 
 export function EventDetailPage() {
   const { journeyId: journeyIdParam, eventId: eventIdParam } = useParams()
   const journeyId = Number(journeyIdParam)
   const eventId = Number(eventIdParam)
-  const navigate = useNavigate()
   const location = useLocation()
-  const { accessToken, logout } = useAuth()
+  const { accessToken } = useAuth()
   const isExplore = location.pathname.startsWith('/explore/')
   const journeyBackTo = isExplore ? `/explore/${journeyId}` : `/journeys/${journeyId}`
 
@@ -26,32 +26,11 @@ export function EventDetailPage() {
     enabled: Boolean(accessToken) && !invalidIds,
   })
 
-  function handleLogout() {
-    logout()
-    void navigate('/', { replace: true })
-  }
-
   const event = eventQuery.data
 
   return (
     <div className="min-h-svh bg-[var(--color-fog)]">
-      <header className="border-b border-[var(--color-line)] bg-[var(--color-paper)]">
-        <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-6 py-5 sm:px-10">
-          <Link
-            to="/"
-            className="font-[family-name:var(--font-display)] text-2xl font-medium tracking-[0.18em] uppercase"
-          >
-            TravelLog
-          </Link>
-          <button
-            type="button"
-            onClick={handleLogout}
-            className="border border-[var(--color-line)] px-4 py-2 text-[11px] font-medium tracking-[0.2em] text-[var(--color-ink)] uppercase transition hover:border-[var(--color-sea)]"
-          >
-            Sign out
-          </button>
-        </div>
-      </header>
+      <AppHeader />
 
       <main className="mx-auto max-w-6xl px-6 py-12 sm:px-10 sm:py-16">
         {invalidIds && (
