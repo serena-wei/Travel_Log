@@ -9,6 +9,14 @@ const navLinkClass = ({ isActive }: { isActive: boolean }) =>
       : 'text-[var(--color-stone)] hover:text-[var(--color-sea)]',
   ].join(' ')
 
+function greetingName(user: { firstName: string | null; username: string } | null | undefined) {
+  if (!user) {
+    return ''
+  }
+  const first = user.firstName?.trim()
+  return first || user.username
+}
+
 export function AppHeader() {
   const navigate = useNavigate()
   const { user, logout } = useAuth()
@@ -35,12 +43,17 @@ export function AppHeader() {
             <NavLink to="/explore" className={navLinkClass}>
               Explore
             </NavLink>
+            <NavLink to="/profile" className={navLinkClass}>
+              Profile
+            </NavLink>
           </nav>
         </div>
         <div className="flex shrink-0 items-center gap-3">
-          <span className="hidden text-sm tracking-wide text-[var(--color-stone)] sm:inline">
-            {user?.username}
-          </span>
+          {user && (
+            <p className="hidden text-sm tracking-wide text-[var(--color-stone)] sm:block">
+              Hi, {greetingName(user)}.
+            </p>
+          )}
           <button
             type="button"
             onClick={handleLogout}

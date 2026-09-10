@@ -48,8 +48,16 @@ export type UserResponse = {
   lastName: string | null
   location: string | null
   description: string | null
+  avatarUrl: string | null
   role: string
   active: boolean
+}
+
+export type UpdateUserProfileRequest = {
+  firstName?: string | null
+  lastName?: string | null
+  location?: string | null
+  description?: string | null
 }
 
 export type AuthResponse = {
@@ -141,6 +149,79 @@ export async function fetchCurrentUser(accessToken: string): Promise<UserRespons
     throw await parseApiError(response)
   }
   return response.json() as Promise<UserResponse>
+}
+
+export async function updateCurrentUser(
+  accessToken: string,
+  request: UpdateUserProfileRequest,
+): Promise<UserResponse> {
+  const response = await fetch(`${API_BASE_URL}${API_V1}/users/current`, {
+    method: 'PATCH',
+    headers: authJsonHeaders(accessToken),
+    body: JSON.stringify(request),
+  })
+  if (!response.ok) {
+    throw await parseApiError(response)
+  }
+  return response.json() as Promise<UserResponse>
+}
+
+export type PresignAvatarResponse = {
+  uploadUrl: string
+  objectKey: string
+  contentType: string
+}
+
+export type PresignAvatarRequest = {
+  contentType: string
+  sizeBytes: number
+  fileName?: string
+}
+
+export const MAX_AVATAR_BYTES = 5 * 1024 * 1024
+export const ALLOWED_AVATAR_TYPES = ['image/jpeg', 'image/png', 'image/webp'] as const
+
+export async function presignAvatar(
+  accessToken: string,
+  request: PresignAvatarRequest,
+): Promise<PresignAvatarResponse> {
+  const response = await fetch(`${API_BASE_URL}${API_V1}/users/current/avatar/presign`, {
+    method: 'POST',
+    headers: authJsonHeaders(accessToken),
+    body: JSON.stringify(request),
+  })
+  if (!response.ok) {
+    throw await parseApiError(response)
+  }
+  return response.json() as Promise<PresignAvatarResponse>
+}
+
+export async function uploadAvatar(accessToken: string, file: File): Promise<PresignAvatarResponse> {
+  const contentType = file.type || 'image/jpeg'
+  const presigned = await presignAvatar(accessToken, {
+    contentType,
+    sizeBytes: file.size,
+    fileName: file.name,
+  })
+  const uploadResponse = await fetch(presigned.uploadUrl, {
+    method: 'PUT',
+    headers: { 'Content-Type': contentType },
+    body: file,
+  })
+  if (!uploadResponse.ok) {
+    throw new Error(`Avatar upload failed (${uploadResponse.status})`)
+  }
+  return presigned
+}
+
+export async function deleteAvatar(accessToken: string): Promise<void> {
+  const response = await fetch(`${API_BASE_URL}${API_V1}/users/current/avatar`, {
+    method: 'DELETE',
+    headers: authHeaders(accessToken),
+  })
+  if (!response.ok) {
+    throw await parseApiError(response)
+  }
 }
 
 export type JourneyResponse = {
