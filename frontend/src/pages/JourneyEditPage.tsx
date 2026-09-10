@@ -10,7 +10,7 @@ import {
 } from '../api/client'
 import { queryKeys } from '../api/queryKeys'
 import { useAuth } from '../auth/useAuth'
-import { AppHeader } from '../components/AppHeader'
+import { AppShell } from '../components/AppShell'
 
 type FieldErrors = Partial<Record<'title' | 'startDate' | 'endDate', string>>
 
@@ -109,9 +109,7 @@ export function JourneyEditPage() {
   const invalidId = !Number.isFinite(journeyId) || journeyId <= 0
 
   return (
-    <div className="min-h-svh bg-[var(--color-fog)]">
-      <AppHeader />
-
+    <AppShell>
       <main className="mx-auto max-w-6xl px-6 py-12 sm:px-10 sm:py-16">
         {invalidId && (
           <p role="alert" className="text-sm text-[var(--color-danger)]">
@@ -238,7 +236,7 @@ export function JourneyEditPage() {
           </>
         )}
       </main>
-    </div>
+    </AppShell>
   )
 }
 

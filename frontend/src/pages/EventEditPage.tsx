@@ -19,7 +19,7 @@ import {
   journeyDateTimeMin,
   toDatetimeLocalValue,
 } from './datetimeLocal'
-import { AppHeader } from '../components/AppHeader'
+import { AppShell } from '../components/AppShell'
 import { ConfirmDialog } from '../components/ConfirmDialog'
 import {
   EVENT_PHOTO_UPLOAD_WARNING_STATE_KEY,
@@ -256,9 +256,7 @@ export function EventEditPage() {
     endMinCandidates.length > 0 ? endMinCandidates.sort().at(-1) : undefined
 
   return (
-    <div className="min-h-svh bg-[var(--color-fog)]">
-      <AppHeader />
-
+    <AppShell>
       <main className="mx-auto max-w-6xl px-6 py-12 sm:px-10 sm:py-16">
         {invalidIds && (
           <p role="alert" className="text-sm text-[var(--color-danger)]">
@@ -415,7 +413,7 @@ export function EventEditPage() {
           }
         }}
       />
-    </div>
+    </AppShell>
   )
 }
 

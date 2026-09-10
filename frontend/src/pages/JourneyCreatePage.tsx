@@ -9,7 +9,7 @@ import {
 } from '../api/client'
 import { queryKeys } from '../api/queryKeys'
 import { useAuth } from '../auth/useAuth'
-import { AppHeader } from '../components/AppHeader'
+import { AppShell } from '../components/AppShell'
 
 type FieldErrors = Partial<Record<'title' | 'startDate' | 'endDate', string>>
 
@@ -97,11 +97,9 @@ export function JourneyCreatePage() {
   }
 
   return (
-    <div className="min-h-svh bg-[var(--color-fog)]">
-      <AppHeader />
-
+    <AppShell>
       <main className="mx-auto max-w-6xl px-6 py-12 sm:px-10 sm:py-16">
-        <div>
+        <div className="page-intro">
           <p className="mb-3 text-[11px] font-medium tracking-[0.28em] text-[var(--color-gold)] uppercase">
             New journey
           </p>
@@ -213,7 +211,7 @@ export function JourneyCreatePage() {
           </button>
         </form>
       </main>
-    </div>
+    </AppShell>
   )
 }
 

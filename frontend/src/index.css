@@ -2,17 +2,20 @@
 
 :root {
   --color-ink: #10161c;
-  --color-fog: #f5f7f8;
-  --color-paper: #ffffff;
+  --color-fog: #eef2f3;
+  --color-mist: #e3eaec;
+  --color-paper: #fbfcfc;
   --color-sea: #243f48;
   --color-sea-deep: #1a3037;
+  --color-sea-soft: color-mix(in srgb, var(--color-sea) 9%, white);
   --color-gold: #c4a15e;
+  --color-gold-soft: color-mix(in srgb, var(--color-gold) 16%, transparent);
   --color-stone: #66727c;
-  --color-line: color-mix(in srgb, var(--color-ink) 10%, transparent);
+  --color-line: color-mix(in srgb, var(--color-ink) 12%, transparent);
   --color-danger: #9b2c2c;
   --font-display: "Cormorant Garamond", "Times New Roman", serif;
   --font-body: "Outfit", "Segoe UI", sans-serif;
-  --shadow-form: 0 24px 60px rgba(16, 22, 28, 0.06);
+  --shadow-form: 0 24px 60px rgba(16, 22, 28, 0.07);
   color: var(--color-ink);
   background: var(--color-fog);
   font-family: var(--font-body);
@@ -21,6 +24,90 @@
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
+}
+
+.app-canvas {
+  position: relative;
+  isolation: isolate;
+  background-color: var(--color-fog);
+  background-image:
+    radial-gradient(
+      ellipse 110% 70% at 100% -8%,
+      color-mix(in srgb, var(--color-sea) 11%, transparent),
+      transparent 58%
+    ),
+    radial-gradient(
+      ellipse 80% 55% at -8% 28%,
+      color-mix(in srgb, var(--color-gold) 14%, transparent),
+      transparent 52%
+    ),
+    linear-gradient(180deg, var(--color-fog) 0%, var(--color-mist) 100%);
+}
+
+.app-canvas > * {
+  position: relative;
+  z-index: 1;
+}
+
+.page-intro {
+  border-left: 3px solid var(--color-gold);
+  padding-left: 1.25rem;
+}
+
+.journey-mark {
+  background:
+    linear-gradient(
+      160deg,
+      color-mix(in srgb, var(--color-sea) 92%, white) 0%,
+      var(--color-sea-deep) 100%
+    );
+}
+
+.interactive-entry {
+  transition:
+    background-color 160ms ease,
+    box-shadow 160ms ease,
+    transform 160ms ease;
+}
+
+.interactive-entry:hover {
+  background-color: var(--color-sea-soft);
+  box-shadow: 0 10px 26px rgba(16, 22, 28, 0.07);
+  transform: translateY(-1px);
+}
+
+.interactive-entry:hover .interactive-entry-title {
+  color: var(--color-sea);
+}
+
+.interactive-entry:hover .interactive-entry-open {
+  color: var(--color-sea);
+  opacity: 1;
+  transform: translateX(0);
+}
+
+.interactive-entry-open {
+  opacity: 0.45;
+  transform: translateX(-4px);
+  transition:
+    color 160ms ease,
+    opacity 160ms ease,
+    transform 160ms ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .interactive-entry,
+  .interactive-entry-open {
+    transition: none;
+  }
+
+  .interactive-entry:hover {
+    transform: none;
+  }
+
+  .interactive-entry:hover .interactive-entry-open {
+    transform: none;
+  }
 }
 
 * {

@@ -5,7 +5,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { ApiError, createEvent, getJourney, uploadEventPhoto } from '../api/client'
 import { queryKeys } from '../api/queryKeys'
 import { useAuth } from '../auth/useAuth'
-import { AppHeader } from '../components/AppHeader'
+import { AppShell } from '../components/AppShell'
 import {
   datePart,
   journeyDateTimeMax,
@@ -158,9 +158,7 @@ export function EventCreatePage() {
     endMinCandidates.length > 0 ? endMinCandidates.sort().at(-1) : undefined
 
   return (
-    <div className="min-h-svh bg-[var(--color-fog)]">
-      <AppHeader />
-
+    <AppShell>
       <main className="mx-auto max-w-6xl px-6 py-12 sm:px-10 sm:py-16">
         {invalidJourneyId ? (
           <p role="alert" className="text-sm text-[var(--color-danger)]">
@@ -275,7 +273,7 @@ export function EventCreatePage() {
           </>
         )}
       </main>
-    </div>
+    </AppShell>
   )
 }
 
