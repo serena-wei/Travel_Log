@@ -23,7 +23,7 @@ export function AppHeader() {
       <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-6 py-5 sm:px-10">
         <div className="flex min-w-0 items-center gap-6 sm:gap-10">
           <Link
-            to="/"
+            to="/dashboard"
             className="shrink-0 font-[family-name:var(--font-display)] text-2xl font-medium tracking-[0.18em] uppercase"
           >
             TravelLog

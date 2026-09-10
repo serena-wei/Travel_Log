@@ -65,7 +65,7 @@ export function HomePage() {
               {user ? (
                 <>
                   <Link
-                    to="/journeys"
+                    to="/dashboard"
                     className="bg-white px-7 py-3.5 text-[11px] font-medium tracking-[0.2em] !text-[#10161c] uppercase shadow-[0_8px_30px_rgba(0,0,0,0.12)] transition hover:bg-white/92"
                   >
                     Continue

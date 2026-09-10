@@ -22,7 +22,7 @@ export function LoginPage() {
     typeof location.state.from === 'string'
       ? location.state.from
       : null
-  const redirectTo = isIntentionalLogout() || !from ? '/journeys' : from
+  const redirectTo = isIntentionalLogout() || !from ? '/dashboard' : from
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({})
