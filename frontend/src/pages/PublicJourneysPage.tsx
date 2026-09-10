@@ -1,12 +1,12 @@
-import { Link, useNavigate } from 'react-router-dom'
+import { Link } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { ApiError, listPublicJourneys } from '../api/client'
 import { queryKeys } from '../api/queryKeys'
 import { useAuth } from '../auth/useAuth'
+import { AppHeader } from '../components/AppHeader'
 
 export function PublicJourneysPage() {
-  const navigate = useNavigate()
-  const { user, accessToken, logout } = useAuth()
+  const { accessToken } = useAuth()
 
   const journeysQuery = useQuery({
     queryKey: queryKeys.journeys.public,
@@ -14,55 +14,21 @@ export function PublicJourneysPage() {
     enabled: Boolean(accessToken),
   })
 
-  function handleLogout() {
-    logout()
-    void navigate('/', { replace: true })
-  }
-
   return (
     <div className="min-h-svh bg-[var(--color-fog)]">
-      <header className="border-b border-[var(--color-line)] bg-[var(--color-paper)]">
-        <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-6 py-5 sm:px-10">
-          <Link
-            to="/"
-            className="font-[family-name:var(--font-display)] text-2xl font-medium tracking-[0.18em] uppercase"
-          >
-            TravelLog
-          </Link>
-          <div className="flex items-center gap-3">
-            <span className="hidden text-sm tracking-wide text-[var(--color-stone)] sm:inline">
-              {user?.username}
-            </span>
-            <button
-              type="button"
-              onClick={handleLogout}
-              className="border border-[var(--color-line)] px-4 py-2 text-[11px] font-medium tracking-[0.2em] text-[var(--color-ink)] uppercase transition hover:border-[var(--color-sea)]"
-            >
-              Sign out
-            </button>
-          </div>
-        </div>
-      </header>
+      <AppHeader />
 
       <main className="mx-auto max-w-6xl px-6 py-12 sm:px-10 sm:py-16">
-        <div className="flex items-start justify-between gap-4">
-          <div>
-            <p className="mb-3 text-[11px] font-medium tracking-[0.28em] text-[var(--color-gold)] uppercase">
-              Community
-            </p>
-            <h1 className="font-[family-name:var(--font-display)] text-4xl font-medium tracking-wide text-[var(--color-ink)] sm:text-5xl">
-              Explore
-            </h1>
-            <p className="mt-3 max-w-xl font-light text-[var(--color-stone)]">
-              Browse public journeys, newest updates first. Editing stays in My journeys.
-            </p>
-          </div>
-          <Link
-            to="/journeys"
-            className="shrink-0 border border-[var(--color-line)] px-5 py-3 text-[11px] font-medium tracking-[0.2em] text-[var(--color-ink)] uppercase transition hover:border-[var(--color-sea)]"
-          >
-            My journeys
-          </Link>
+        <div>
+          <p className="mb-3 text-[11px] font-medium tracking-[0.28em] text-[var(--color-gold)] uppercase">
+            Community
+          </p>
+          <h1 className="font-[family-name:var(--font-display)] text-4xl font-medium tracking-wide text-[var(--color-ink)] sm:text-5xl">
+            Explore
+          </h1>
+          <p className="mt-3 max-w-xl font-light text-[var(--color-stone)]">
+            Browse public journeys, newest updates first. Editing stays in My journeys.
+          </p>
         </div>
 
         <section className="mt-12">

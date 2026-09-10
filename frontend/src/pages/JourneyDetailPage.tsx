@@ -1,18 +1,18 @@
 import { useState } from 'react'
-import { Link, useLocation, useNavigate, useParams } from 'react-router-dom'
+import { Link, useLocation, useParams } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { ApiError, deleteEvent, getJourney, listEvents } from '../api/client'
 import { queryKeys } from '../api/queryKeys'
 import { useAuth } from '../auth/useAuth'
+import { AppHeader } from '../components/AppHeader'
 import { ConfirmDialog } from '../components/ConfirmDialog'
 
 export function JourneyDetailPage() {
   const { id } = useParams()
   const journeyId = Number(id)
-  const navigate = useNavigate()
   const location = useLocation()
   const queryClient = useQueryClient()
-  const { accessToken, logout } = useAuth()
+  const { accessToken } = useAuth()
   const [pendingDelete, setPendingDelete] = useState<{ id: number; title: string } | null>(null)
 
   const readOnly = location.pathname.startsWith('/explore')
@@ -44,33 +44,12 @@ export function JourneyDetailPage() {
     },
   })
 
-  function handleLogout() {
-    logout()
-    void navigate('/', { replace: true })
-  }
-
   const invalidId = !Number.isFinite(journeyId) || journeyId <= 0
   const journey = journeyQuery.data
 
   return (
     <div className="min-h-svh bg-[var(--color-fog)]">
-      <header className="border-b border-[var(--color-line)] bg-[var(--color-paper)]">
-        <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-6 py-5 sm:px-10">
-          <Link
-            to="/"
-            className="font-[family-name:var(--font-display)] text-2xl font-medium tracking-[0.18em] uppercase"
-          >
-            TravelLog
-          </Link>
-          <button
-            type="button"
-            onClick={handleLogout}
-            className="border border-[var(--color-line)] px-4 py-2 text-[11px] font-medium tracking-[0.2em] text-[var(--color-ink)] uppercase transition hover:border-[var(--color-sea)]"
-          >
-            Sign out
-          </button>
-        </div>
-      </header>
+      <AppHeader />
 
       <main className="mx-auto max-w-6xl px-6 py-12 sm:px-10 sm:py-16">
         {invalidId && (

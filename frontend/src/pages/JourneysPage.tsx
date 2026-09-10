@@ -1,15 +1,15 @@
 import { useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { ApiError, deleteJourney, listJourneys } from '../api/client'
 import { queryKeys } from '../api/queryKeys'
 import { useAuth } from '../auth/useAuth'
+import { AppHeader } from '../components/AppHeader'
 import { ConfirmDialog } from '../components/ConfirmDialog'
 
 export function JourneysPage() {
-  const navigate = useNavigate()
   const queryClient = useQueryClient()
-  const { user, accessToken, logout } = useAuth()
+  const { accessToken } = useAuth()
   const [pendingDelete, setPendingDelete] = useState<{ id: number; title: string } | null>(null)
 
   const journeysQuery = useQuery({
@@ -28,41 +28,9 @@ export function JourneysPage() {
     },
   })
 
-  function handleLogout() {
-    logout()
-    void navigate('/', { replace: true })
-  }
-
   return (
     <div className="min-h-svh bg-[var(--color-fog)]">
-      <header className="border-b border-[var(--color-line)] bg-[var(--color-paper)]">
-        <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-6 py-5 sm:px-10">
-          <Link
-            to="/"
-            className="font-[family-name:var(--font-display)] text-2xl font-medium tracking-[0.18em] uppercase"
-          >
-            TravelLog
-          </Link>
-          <div className="flex items-center gap-3">
-            <Link
-              to="/explore"
-              className="text-[11px] font-medium tracking-[0.2em] text-[var(--color-sea)] uppercase transition hover:text-[var(--color-sea-deep)]"
-            >
-              Explore
-            </Link>
-            <span className="hidden text-sm tracking-wide text-[var(--color-stone)] sm:inline">
-              {user?.username}
-            </span>
-            <button
-              type="button"
-              onClick={handleLogout}
-              className="border border-[var(--color-line)] px-4 py-2 text-[11px] font-medium tracking-[0.2em] text-[var(--color-ink)] uppercase transition hover:border-[var(--color-sea)]"
-            >
-              Sign out
-            </button>
-          </div>
-        </div>
-      </header>
+      <AppHeader />
 
       <main className="mx-auto max-w-6xl px-6 py-12 sm:px-10 sm:py-16">
         <div className="flex items-start justify-between gap-4">

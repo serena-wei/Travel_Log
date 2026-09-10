@@ -5,6 +5,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { ApiError, createEvent, getJourney, uploadEventPhoto } from '../api/client'
 import { queryKeys } from '../api/queryKeys'
 import { useAuth } from '../auth/useAuth'
+import { AppHeader } from '../components/AppHeader'
 import {
   datePart,
   journeyDateTimeMax,
@@ -30,7 +31,7 @@ export function EventCreatePage() {
   const journeyId = Number(journeyIdParam)
   const navigate = useNavigate()
   const queryClient = useQueryClient()
-  const { accessToken, logout } = useAuth()
+  const { accessToken } = useAuth()
   const [form, setForm] = useState(emptyForm)
   const [photos, setPhotos] = useState<SelectedPhoto[]>([])
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({})
@@ -150,11 +151,6 @@ export function EventCreatePage() {
     createMutation.mutate()
   }
 
-  function handleLogout() {
-    logout()
-    void navigate('/', { replace: true })
-  }
-
   const startMaxCandidates = [form.endAt || undefined, journeyMax].filter(Boolean) as string[]
   const startMax = startMaxCandidates.length > 0 ? startMaxCandidates.sort()[0] : undefined
   const endMinCandidates = [form.startAt || undefined, journeyMin].filter(Boolean) as string[]
@@ -163,23 +159,7 @@ export function EventCreatePage() {
 
   return (
     <div className="min-h-svh bg-[var(--color-fog)]">
-      <header className="border-b border-[var(--color-line)] bg-[var(--color-paper)]">
-        <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-6 py-5 sm:px-10">
-          <Link
-            to="/"
-            className="font-[family-name:var(--font-display)] text-2xl font-medium tracking-[0.18em] uppercase"
-          >
-            TravelLog
-          </Link>
-          <button
-            type="button"
-            onClick={handleLogout}
-            className="border border-[var(--color-line)] px-4 py-2 text-[11px] font-medium tracking-[0.2em] text-[var(--color-ink)] uppercase transition hover:border-[var(--color-sea)]"
-          >
-            Sign out
-          </button>
-        </div>
-      </header>
+      <AppHeader />
 
       <main className="mx-auto max-w-6xl px-6 py-12 sm:px-10 sm:py-16">
         {invalidJourneyId ? (
