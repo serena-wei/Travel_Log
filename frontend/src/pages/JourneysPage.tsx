@@ -4,7 +4,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { ApiError, deleteJourney, listJourneys } from '../api/client'
 import { queryKeys } from '../api/queryKeys'
 import { useAuth } from '../auth/useAuth'
-import { AppHeader } from '../components/AppHeader'
+import { AppShell } from '../components/AppShell'
 import { ConfirmDialog } from '../components/ConfirmDialog'
 
 export function JourneysPage() {
@@ -29,12 +29,10 @@ export function JourneysPage() {
   })
 
   return (
-    <div className="min-h-svh bg-[var(--color-fog)]">
-      <AppHeader />
-
+    <AppShell>
       <main className="mx-auto max-w-6xl px-6 py-12 sm:px-10 sm:py-16">
         <div className="flex items-start justify-between gap-4">
-          <div>
+          <div className="page-intro">
             <p className="mb-3 text-[11px] font-medium tracking-[0.28em] text-[var(--color-gold)] uppercase">
               Your journal
             </p>
@@ -88,37 +86,58 @@ export function JourneysPage() {
           )}
 
           {journeysQuery.data && journeysQuery.data.length > 0 && (
-            <ul className="divide-y divide-[var(--color-line)] border-y border-[var(--color-line)]">
+            <ul className="space-y-3">
               {journeysQuery.data.map((journey) => (
                 <li
                   key={journey.id}
-                  className="flex flex-col gap-3 py-5 sm:flex-row sm:items-center sm:justify-between sm:gap-6"
+                  className="interactive-entry flex flex-col gap-3 border border-[var(--color-line)] bg-[color-mix(in_srgb,var(--color-paper)_82%,transparent)] p-4 sm:flex-row sm:items-center sm:gap-6 sm:p-5"
                 >
                   <Link
                     to={`/journeys/${journey.id}`}
-                    className="min-w-0 flex-1 transition hover:opacity-80"
+                    className="flex min-w-0 flex-1 gap-4"
                   >
-                    <p className="font-[family-name:var(--font-display)] text-2xl font-medium tracking-wide text-[var(--color-ink)]">
-                      {journey.title}
-                    </p>
-                    {journey.description && (
-                      <p className="mt-1 max-w-2xl text-sm font-light text-[var(--color-stone)] line-clamp-2">
-                        {journey.description}
+                    <span
+                      aria-hidden="true"
+                      className="journey-mark hidden h-20 w-16 shrink-0 items-end justify-center pb-2 sm:flex"
+                    >
+                      <span className="font-[family-name:var(--font-display)] text-3xl leading-none text-white/90">
+                        {journeyInitial(journey.title)}
+                      </span>
+                    </span>
+                    <span className="min-w-0 flex-1">
+                      <p className="interactive-entry-title font-[family-name:var(--font-display)] text-2xl font-medium tracking-wide text-[var(--color-ink)] transition-colors">
+                        {journey.title}
                       </p>
-                    )}
-                    <div className="mt-2 text-[11px] tracking-[0.16em] text-[var(--color-stone)] uppercase">
-                      <span>{journey.visibility === 'PRIVATE' ? 'Private' : 'Public'}</span>
-                      {formatDateRange(journey.startDate, journey.endDate) && (
-                        <span className="ml-3">
-                          {formatDateRange(journey.startDate, journey.endDate)}
-                        </span>
+                      {journey.description && (
+                        <p className="mt-1 max-w-3xl text-sm font-light text-[var(--color-stone)] line-clamp-2">
+                          {journey.description}
+                        </p>
                       )}
-                    </div>
+                      <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] tracking-[0.16em] uppercase">
+                        <span
+                          className={
+                            journey.visibility === 'PUBLIC'
+                              ? 'text-[var(--color-gold)]'
+                              : 'text-[var(--color-stone)]'
+                          }
+                        >
+                          {journey.visibility === 'PRIVATE' ? 'Private' : 'Public'}
+                        </span>
+                        {formatDateRange(journey.startDate, journey.endDate) && (
+                          <span className="text-[var(--color-stone)]">
+                            {formatDateRange(journey.startDate, journey.endDate)}
+                          </span>
+                        )}
+                      </div>
+                    </span>
+                    <span className="interactive-entry-open hidden shrink-0 self-center text-[11px] font-medium tracking-[0.2em] text-[var(--color-stone)] uppercase sm:inline">
+                      Open →
+                    </span>
                   </Link>
                   <div className="flex shrink-0 items-center gap-3">
                     <Link
                       to={`/journeys/${journey.id}/edit`}
-                      className="border border-[var(--color-line)] px-4 py-2 text-[11px] font-medium tracking-[0.2em] text-[var(--color-ink)] uppercase transition hover:border-[var(--color-sea)]"
+                      className="border border-[var(--color-line)] bg-[var(--color-paper)] px-4 py-2 text-[11px] font-medium tracking-[0.2em] text-[var(--color-ink)] uppercase transition hover:border-[var(--color-sea)]"
                     >
                       Edit
                     </Link>
@@ -126,7 +145,7 @@ export function JourneysPage() {
                       type="button"
                       onClick={() => setPendingDelete({ id: journey.id, title: journey.title })}
                       disabled={deleteMutation.isPending}
-                      className="border border-[var(--color-danger)] px-4 py-2 text-[11px] font-medium tracking-[0.2em] text-[var(--color-danger)] uppercase transition hover:bg-[color-mix(in_srgb,var(--color-danger)_8%,white)] disabled:cursor-not-allowed disabled:opacity-60"
+                      className="border border-[var(--color-danger)] bg-[var(--color-paper)] px-4 py-2 text-[11px] font-medium tracking-[0.2em] text-[var(--color-danger)] uppercase transition hover:bg-[color-mix(in_srgb,var(--color-danger)_8%,white)] disabled:cursor-not-allowed disabled:opacity-60"
                     >
                       Delete
                     </button>
@@ -154,8 +173,13 @@ export function JourneysPage() {
           }
         }}
       />
-    </div>
+    </AppShell>
   )
+}
+
+function journeyInitial(title: string): string {
+  const trimmed = title.trim()
+  return trimmed ? trimmed.charAt(0).toUpperCase() : '·'
 }
 
 function formatDateRange(startDate: string | null, endDate: string | null): string | null {

@@ -3,7 +3,7 @@ import { useQuery } from '@tanstack/react-query'
 import { ApiError, getEvent } from '../api/client'
 import { queryKeys } from '../api/queryKeys'
 import { useAuth } from '../auth/useAuth'
-import { AppHeader } from '../components/AppHeader'
+import { AppShell } from '../components/AppShell'
 
 export function EventDetailPage() {
   const { journeyId: journeyIdParam, eventId: eventIdParam } = useParams()
@@ -29,9 +29,7 @@ export function EventDetailPage() {
   const event = eventQuery.data
 
   return (
-    <div className="min-h-svh bg-[var(--color-fog)]">
-      <AppHeader />
-
+    <AppShell>
       <main className="mx-auto max-w-6xl px-6 py-12 sm:px-10 sm:py-16">
         {invalidIds && (
           <p role="alert" className="text-sm text-[var(--color-danger)]">
@@ -53,7 +51,7 @@ export function EventDetailPage() {
 
         {!invalidIds && event && (
           <>
-            <div>
+            <div className="page-intro">
               <p className="mb-3 text-[11px] font-medium tracking-[0.28em] text-[var(--color-gold)] uppercase">
                 Event
               </p>
@@ -82,7 +80,7 @@ export function EventDetailPage() {
 
             {event.photos.length > 0 && (
               <section className="mt-14 border-t border-[var(--color-line)] pt-10">
-                <p className="mb-4 text-[11px] font-medium tracking-[0.18em] text-[var(--color-stone)] uppercase">
+                <p className="mb-4 text-[11px] font-medium tracking-[0.18em] text-[var(--color-gold)] uppercase">
                   Photos
                 </p>
                 <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
@@ -101,7 +99,7 @@ export function EventDetailPage() {
           </>
         )}
       </main>
-    </div>
+    </AppShell>
   )
 }
 

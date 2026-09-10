@@ -3,9 +3,9 @@ import { useAuth } from '../auth/useAuth'
 
 const navLinkClass = ({ isActive }: { isActive: boolean }) =>
   [
-    'text-[11px] font-medium tracking-[0.2em] uppercase transition',
+    'relative pb-1 text-[11px] font-medium tracking-[0.2em] uppercase transition',
     isActive
-      ? 'text-[var(--color-ink)]'
+      ? 'text-[var(--color-ink)] after:absolute after:inset-x-0 after:-bottom-px after:h-0.5 after:bg-[var(--color-gold)]'
       : 'text-[var(--color-stone)] hover:text-[var(--color-sea)]',
   ].join(' ')
 
@@ -19,7 +19,7 @@ export function AppHeader() {
   }
 
   return (
-    <header className="border-b border-[var(--color-line)] bg-[var(--color-paper)]">
+    <header className="border-b border-[var(--color-line)] bg-[color-mix(in_srgb,var(--color-paper)_88%,var(--color-sea-soft))] backdrop-blur-[6px]">
       <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-6 py-5 sm:px-10">
         <div className="flex min-w-0 items-center gap-6 sm:gap-10">
           <Link
@@ -44,7 +44,7 @@ export function AppHeader() {
           <button
             type="button"
             onClick={handleLogout}
-            className="border border-[var(--color-line)] px-4 py-2 text-[11px] font-medium tracking-[0.2em] text-[var(--color-ink)] uppercase transition hover:border-[var(--color-sea)]"
+            className="border border-[var(--color-line)] bg-[var(--color-paper)] px-4 py-2 text-[11px] font-medium tracking-[0.2em] text-[var(--color-ink)] uppercase transition hover:border-[var(--color-sea)]"
           >
             Sign out
           </button>

@@ -4,7 +4,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { ApiError, deleteEvent, getJourney, listEvents } from '../api/client'
 import { queryKeys } from '../api/queryKeys'
 import { useAuth } from '../auth/useAuth'
-import { AppHeader } from '../components/AppHeader'
+import { AppShell } from '../components/AppShell'
 import { ConfirmDialog } from '../components/ConfirmDialog'
 
 export function JourneyDetailPage() {
@@ -48,9 +48,7 @@ export function JourneyDetailPage() {
   const journey = journeyQuery.data
 
   return (
-    <div className="min-h-svh bg-[var(--color-fog)]">
-      <AppHeader />
-
+    <AppShell>
       <main className="mx-auto max-w-6xl px-6 py-12 sm:px-10 sm:py-16">
         {invalidId && (
           <p role="alert" className="text-sm text-[var(--color-danger)]">
@@ -72,7 +70,7 @@ export function JourneyDetailPage() {
 
         {!invalidId && journey && (
           <>
-            <div>
+            <div className="border border-[var(--color-line)] bg-[color-mix(in_srgb,var(--color-paper)_88%,var(--color-sea-soft))] px-5 py-6 sm:px-8 sm:py-8">
               <p className="mb-3 text-[11px] font-medium tracking-[0.28em] text-[var(--color-gold)] uppercase">
                 {readOnly ? 'Public journey' : 'Journey'}
               </p>
@@ -90,14 +88,24 @@ export function JourneyDetailPage() {
                 </div>
               </div>
 
-              <div className="mt-4 flex flex-wrap gap-x-4 gap-y-1 text-[11px] tracking-[0.16em] text-[var(--color-stone)] uppercase">
+              <div className="mt-4 flex flex-wrap gap-x-4 gap-y-1 text-[11px] tracking-[0.16em] uppercase">
                 {readOnly ? (
-                  <span>By {journey.ownerUsername}</span>
+                  <span className="text-[var(--color-gold)]">By {journey.ownerUsername}</span>
                 ) : (
-                  <span>{journey.visibility === 'PRIVATE' ? 'Private' : 'Public'}</span>
+                  <span
+                    className={
+                      journey.visibility === 'PUBLIC'
+                        ? 'text-[var(--color-gold)]'
+                        : 'text-[var(--color-stone)]'
+                    }
+                  >
+                    {journey.visibility === 'PRIVATE' ? 'Private' : 'Public'}
+                  </span>
                 )}
                 {formatDateRange(journey.startDate, journey.endDate) && (
-                  <span>{formatDateRange(journey.startDate, journey.endDate)}</span>
+                  <span className="text-[var(--color-stone)]">
+                    {formatDateRange(journey.startDate, journey.endDate)}
+                  </span>
                 )}
               </div>
 
@@ -199,36 +207,47 @@ export function JourneyDetailPage() {
                               className="absolute top-1.5 left-0 size-2.5 rounded-full border-2 border-[var(--color-sea)] bg-[var(--color-paper)] sm:size-3"
                             />
 
-                            <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-6">
+                            <div className="interactive-entry flex flex-col gap-3 p-3 sm:flex-row sm:items-start sm:justify-between sm:gap-6 sm:p-4">
                               <Link
                                 to={eventPath(eventItem.id)}
-                                className="min-w-0 flex-1 transition hover:opacity-80"
+                                className="min-w-0 flex-1"
                               >
-                                {timeLabel && (
-                                  <p className="mb-1 text-[11px] tracking-[0.16em] text-[var(--color-gold)] uppercase">
-                                    {timeLabel}
-                                  </p>
-                                )}
-                                <p className="font-[family-name:var(--font-display)] text-2xl font-medium tracking-wide text-[var(--color-ink)]">
-                                  {eventItem.title}
-                                </p>
-                                {eventItem.description && (
-                                  <p className="mt-1 max-w-2xl text-sm font-light text-[var(--color-stone)] line-clamp-2">
-                                    {eventItem.description}
-                                  </p>
-                                )}
+                                <div className="flex items-start justify-between gap-4">
+                                  <div className="min-w-0">
+                                    {timeLabel && (
+                                      <p className="mb-1 text-[11px] tracking-[0.16em] text-[var(--color-gold)] uppercase">
+                                        {timeLabel}
+                                      </p>
+                                    )}
+                                    <p className="interactive-entry-title font-[family-name:var(--font-display)] text-2xl font-medium tracking-wide text-[var(--color-ink)] transition-colors">
+                                      {eventItem.title}
+                                    </p>
+                                    {eventItem.description && (
+                                      <p className="mt-1 max-w-2xl text-sm font-light text-[var(--color-stone)] line-clamp-2">
+                                        {eventItem.description}
+                                      </p>
+                                    )}
+                                  </div>
+                                  <span className="interactive-entry-open mt-1 hidden shrink-0 text-[11px] font-medium tracking-[0.2em] text-[var(--color-stone)] uppercase sm:inline">
+                                    Open →
+                                  </span>
+                                </div>
                                 {eventItem.photos.length > 0 && (
-                                  <div className="mt-3 flex gap-2">
-                                    {eventItem.photos.slice(0, 3).map((photo) => (
+                                  <div className="mt-4 flex gap-2">
+                                    {eventItem.photos.slice(0, 3).map((photo, photoIndex) => (
                                       <img
                                         key={photo.id}
                                         src={photo.url}
                                         alt=""
-                                        className="h-14 w-14 object-cover border border-[var(--color-line)]"
+                                        className={
+                                          photoIndex === 0
+                                            ? 'h-24 w-36 object-cover border border-[var(--color-line)]'
+                                            : 'h-24 w-20 object-cover border border-[var(--color-line)]'
+                                        }
                                       />
                                     ))}
                                     {eventItem.photos.length > 3 && (
-                                      <span className="flex h-14 items-center text-xs text-[var(--color-stone)]">
+                                      <span className="flex h-24 items-center bg-[var(--color-sea-soft)] px-3 text-xs tracking-wide text-[var(--color-sea)]">
                                         +{eventItem.photos.length - 3}
                                       </span>
                                     )}
@@ -239,7 +258,7 @@ export function JourneyDetailPage() {
                                 <div className="flex shrink-0 items-center gap-3">
                                   <Link
                                     to={`/journeys/${journeyId}/events/${eventItem.id}/edit`}
-                                    className="border border-[var(--color-line)] px-4 py-2 text-[11px] font-medium tracking-[0.2em] text-[var(--color-ink)] uppercase transition hover:border-[var(--color-sea)]"
+                                    className="border border-[var(--color-line)] bg-[var(--color-paper)] px-4 py-2 text-[11px] font-medium tracking-[0.2em] text-[var(--color-ink)] uppercase transition hover:border-[var(--color-sea)]"
                                   >
                                     Edit
                                   </Link>
@@ -252,7 +271,7 @@ export function JourneyDetailPage() {
                                       })
                                     }
                                     disabled={deleteMutation.isPending}
-                                    className="border border-[var(--color-danger)] px-4 py-2 text-[11px] font-medium tracking-[0.2em] text-[var(--color-danger)] uppercase transition hover:bg-[color-mix(in_srgb,var(--color-danger)_8%,white)] disabled:cursor-not-allowed disabled:opacity-60"
+                                    className="border border-[var(--color-danger)] bg-[var(--color-paper)] px-4 py-2 text-[11px] font-medium tracking-[0.2em] text-[var(--color-danger)] uppercase transition hover:bg-[color-mix(in_srgb,var(--color-danger)_8%,white)] disabled:cursor-not-allowed disabled:opacity-60"
                                   >
                                     Delete
                                   </button>
@@ -289,7 +308,7 @@ export function JourneyDetailPage() {
           }}
         />
       )}
-    </div>
+    </AppShell>
   )
 }
 
