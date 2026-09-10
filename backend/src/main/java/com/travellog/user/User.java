@@ -49,6 +49,15 @@ public class User {
 	@Column(columnDefinition = "TEXT")
 	private String description;
 
+	@Column(name = "avatar_object_key", length = 512)
+	private String avatarObjectKey;
+
+	@Column(name = "avatar_content_type", length = 100)
+	private String avatarContentType;
+
+	@Column(name = "avatar_size_bytes")
+	private Long avatarSizeBytes;
+
 	@Enumerated(EnumType.STRING)
 	@Column(nullable = false, length = 20)
 	private UserRole role = UserRole.TRAVELLER;

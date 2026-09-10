@@ -15,6 +15,8 @@ import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
+import org.springframework.test.context.DynamicPropertyRegistry;
+import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.testcontainers.junit.jupiter.EnabledIfDockerAvailable;
@@ -29,10 +31,15 @@ import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
 
 @EnabledIfDockerAvailable
-@SpringBootTest
+@SpringBootTest(properties = "travellog.s3.bucket=")
 @AutoConfigureMockMvc
 @Import(TestcontainersConfiguration.class)
 class EventPhotoIntegrationTest {
+
+	@DynamicPropertySource
+	static void disableRealS3(DynamicPropertyRegistry registry) {
+		registry.add("travellog.s3.bucket", () -> "");
+	}
 
 	@Autowired
 	private MockMvc mockMvc;

@@ -16,14 +16,17 @@ public class UserAuthService {
 	private final UserRepository userRepository;
 	private final PasswordEncoder passwordEncoder;
 	private final JwtService jwtService;
+	private final UserProfileService userProfileService;
 
 	public UserAuthService(
 			UserRepository userRepository,
 			PasswordEncoder passwordEncoder,
-			JwtService jwtService) {
+			JwtService jwtService,
+			UserProfileService userProfileService) {
 		this.userRepository = userRepository;
 		this.passwordEncoder = passwordEncoder;
 		this.jwtService = jwtService;
+		this.userProfileService = userProfileService;
 	}
 
 	@Transactional
@@ -48,7 +51,7 @@ public class UserAuthService {
 		user.setRole(UserRole.TRAVELLER);
 		user.setActive(true);
 
-		return UserResponse.from(userRepository.save(user));
+		return userProfileService.toResponse(userRepository.save(user));
 	}
 
 	@Transactional(readOnly = true)
@@ -67,16 +70,7 @@ public class UserAuthService {
 			throw new UnauthorizedException(ErrorCode.ACCOUNT_DISABLED, ApiMessages.ACCOUNT_DISABLED);
 		}
 
-		return AuthResponse.bearer(jwtService.generateToken(user), user);
-	}
-
-	@Transactional(readOnly = true)
-	public UserResponse getCurrentUser(Long userId) {
-		User user = userRepository.findById(userId)
-				.orElseThrow(() -> new UnauthorizedException(
-						ErrorCode.UNAUTHORIZED,
-						ApiMessages.AUTHENTICATION_REQUIRED));
-		return UserResponse.from(user);
+		return AuthResponse.bearer(jwtService.generateToken(user), userProfileService.toResponse(user));
 	}
 
 	private static String trimToNull(String value) {

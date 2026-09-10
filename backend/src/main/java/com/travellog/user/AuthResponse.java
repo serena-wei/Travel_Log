@@ -7,7 +7,7 @@ public record AuthResponse(
 		String tokenType,
 		UserResponse user
 ) {
-	public static AuthResponse bearer(String accessToken, User user) {
-		return new AuthResponse(accessToken, SecurityConstants.BEARER_TOKEN_TYPE, UserResponse.from(user));
+	public static AuthResponse bearer(String accessToken, UserResponse user) {
+		return new AuthResponse(accessToken, SecurityConstants.BEARER_TOKEN_TYPE, user);
 	}
 }
