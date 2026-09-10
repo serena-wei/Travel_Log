@@ -7,7 +7,7 @@ import { clearAccessToken, getAccessToken, setAccessToken } from './token'
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [accessToken, setAccessTokenState] = useState<string | null>(() => getAccessToken())
-  const [user, setUser] = useState<UserResponse | null>(null)
+  const [user, setUserState] = useState<UserResponse | null>(null)
   const [isBootstrapping, setIsBootstrapping] = useState(() => Boolean(getAccessToken()))
 
   useEffect(() => {
@@ -24,13 +24,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const currentUser = await fetchCurrentUser(existing)
         if (!cancelled) {
           setAccessTokenState(existing)
-          setUser(currentUser)
+          setUserState(currentUser)
         }
       } catch (error) {
         clearAccessToken()
         if (!cancelled) {
           setAccessTokenState(null)
-          setUser(null)
+          setUserState(null)
           if (!(error instanceof ApiError && error.status === 401)) {
             console.error(error)
           }
@@ -58,13 +58,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         clearIntentionalLogout()
         setAccessToken(response.accessToken)
         setAccessTokenState(response.accessToken)
-        setUser(response.user)
+        setUserState(response.user)
       },
       logout() {
         markIntentionalLogout()
         clearAccessToken()
         setAccessTokenState(null)
-        setUser(null)
+        setUserState(null)
+      },
+      setUser(nextUser: UserResponse) {
+        setUserState(nextUser)
+      },
+      async refreshUser() {
+        const token = getAccessToken()
+        if (!token) {
+          throw new Error('Not signed in')
+        }
+        const currentUser = await fetchCurrentUser(token)
+        setUserState(currentUser)
+        return currentUser
       },
     }),
     [user, accessToken, isBootstrapping],

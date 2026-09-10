@@ -68,6 +68,7 @@ describe('LoginPage', () => {
         lastName: null,
         location: null,
         description: null,
+        avatarUrl: null,
         role: 'TRAVELLER',
         active: true,
       },
@@ -84,7 +85,7 @@ describe('LoginPage', () => {
       password: 'Secret123',
     })
     expect(await screen.findByRole('heading', { name: 'Your dashboard' })).toBeInTheDocument()
-    expect(screen.getByText('alice')).toBeInTheDocument()
+    expect(screen.getByText('Hi, alice.')).toBeInTheDocument()
   })
 
   it('shows invalid credentials from the API', async () => {

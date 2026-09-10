@@ -55,6 +55,7 @@ const alice = {
   lastName: null,
   location: null,
   description: null,
+  avatarUrl: null,
   role: 'TRAVELLER',
   active: true,
 }

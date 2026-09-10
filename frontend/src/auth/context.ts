@@ -7,6 +7,8 @@ export type AuthContextValue = {
   isBootstrapping: boolean
   login: (username: string, password: string) => Promise<void>
   logout: () => void
+  setUser: (user: UserResponse) => void
+  refreshUser: () => Promise<UserResponse>
 }
 
 export const AuthContext = createContext<AuthContextValue | null>(null)
