@@ -21,6 +21,8 @@ vi.mock('../api/client', async () => {
       id: 10,
       ownerId: 1,
       ownerUsername: 'alice',
+      ownerAvatarUrl: null,
+      coverImageUrl: null,
       title: 'South Island',
       description: null,
       startDate: null,

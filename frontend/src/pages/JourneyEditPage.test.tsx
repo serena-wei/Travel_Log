@@ -52,6 +52,8 @@ const sampleJourney: JourneyResponse = {
   id: 10,
   ownerId: 1,
   ownerUsername: 'alice',
+  ownerAvatarUrl: null,
+  coverImageUrl: null,
   title: 'South Island',
   description: 'Road trip',
   startDate: '2026-01-10',

@@ -52,6 +52,8 @@ const sampleJourney: JourneyResponse = {
   id: 10,
   ownerId: 1,
   ownerUsername: 'alice',
+  ownerAvatarUrl: null,
+  coverImageUrl: null,
   title: 'South Island',
   description: 'Road trip',
   startDate: '2026-01-10',
@@ -185,7 +187,7 @@ describe('JourneyDetailPage', () => {
     )
 
     expect(await screen.findByRole('heading', { name: 'South Island' })).toBeInTheDocument()
-    expect(screen.getByText('By alice')).toBeInTheDocument()
+    expect(screen.getByText('alice')).toBeInTheDocument()
     expect(screen.getByRole('link', { name: '← Explore' })).toHaveAttribute('href', '/explore')
     expect(screen.getByRole('link', { name: /Day hike/i })).toHaveAttribute(
       'href',

@@ -51,7 +51,7 @@ export function AppHeader() {
         <div className="flex shrink-0 items-center gap-3">
           {user && (
             <p className="hidden text-sm tracking-wide text-[var(--color-stone)] sm:block">
-              Hi, {greetingName(user)}.
+              Hi, {greetingName(user)}
             </p>
           )}
           <button

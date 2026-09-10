@@ -1,5 +1,7 @@
 package com.travellog.event;
 
+import java.util.Collection;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -19,4 +21,13 @@ public interface EventPhotoRepository extends JpaRepository<EventPhoto, Long> {
 
 	@Query("select p.objectKey from EventPhoto p where p.event.journey.id = :journeyId")
 	List<String> findObjectKeysByJourneyId(@Param("journeyId") Long journeyId);
+
+	@Query("""
+			select e.journey.id, p.objectKey
+			from EventPhoto p
+			join p.event e
+			where e.journey.id in :journeyIds
+			order by e.journey.id asc, e.startAt asc, p.sortOrder asc, p.id asc
+			""")
+	List<Object[]> findCoverObjectKeysByJourneyIds(@Param("journeyIds") Collection<Long> journeyIds);
 }
