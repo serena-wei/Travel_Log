@@ -8,10 +8,15 @@ public record UserResponse(
 		String lastName,
 		String location,
 		String description,
+		String avatarUrl,
 		UserRole role,
 		boolean active
 ) {
 	public static UserResponse from(User user) {
+		return from(user, null);
+	}
+
+	public static UserResponse from(User user, String avatarUrl) {
 		return new UserResponse(
 				user.getId(),
 				user.getUsername(),
@@ -20,6 +25,7 @@ public record UserResponse(
 				user.getLastName(),
 				user.getLocation(),
 				user.getDescription(),
+				avatarUrl,
 				user.getRole(),
 				user.isActive());
 	}

@@ -26,6 +26,7 @@ public final class ApiMessages {
 	public static final String PHOTO_TYPE_UNSUPPORTED =
 			"Only JPEG, PNG, and WebP images are allowed";
 	public static final String PHOTO_TOO_LARGE = "Each photo must be 5MB or smaller";
+	public static final String AVATAR_TOO_LARGE = "Avatar must be 5MB or smaller";
 
 	private ApiMessages() {
 	}
