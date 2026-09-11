@@ -228,6 +228,8 @@ export type JourneyResponse = {
   id: number
   ownerId: number
   ownerUsername: string
+  ownerAvatarUrl: string | null
+  coverImageUrl: string | null
   title: string
   description: string | null
   startDate: string | null

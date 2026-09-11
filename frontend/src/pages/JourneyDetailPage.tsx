@@ -88,22 +88,38 @@ export function JourneyDetailPage() {
                 </div>
               </div>
 
-              <div className="mt-4 flex flex-wrap gap-x-4 gap-y-1 text-[11px] tracking-[0.16em] uppercase">
+              <div className="mt-5 flex flex-wrap items-center gap-x-5 gap-y-2 text-sm">
                 {readOnly ? (
-                  <span className="text-[var(--color-gold)]">By {journey.ownerUsername}</span>
+                  <span className="inline-flex items-center gap-1.5 text-sm text-[var(--color-stone)]">
+                    <span className="font-light">by</span>
+                    <span className="inline-flex items-center gap-1.5 font-medium text-[var(--color-sea)]">
+                      {journey.ownerAvatarUrl ? (
+                        <img
+                          src={journey.ownerAvatarUrl}
+                          alt=""
+                          className="h-5 w-5 shrink-0 rounded-full object-cover outline outline-1 outline-[var(--color-line)]"
+                        />
+                      ) : (
+                        <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[var(--color-sea-soft)] text-[10px] font-medium text-[var(--color-sea)] outline outline-1 outline-[var(--color-line)]">
+                          {journey.ownerUsername.trim().charAt(0).toUpperCase() || '?'}
+                        </span>
+                      )}
+                      {journey.ownerUsername}
+                    </span>
+                  </span>
                 ) : (
                   <span
                     className={
                       journey.visibility === 'PUBLIC'
-                        ? 'text-[var(--color-gold)]'
-                        : 'text-[var(--color-stone)]'
+                        ? 'text-[11px] font-medium tracking-[0.16em] text-[var(--color-gold)] uppercase'
+                        : 'text-[11px] font-medium tracking-[0.16em] text-[var(--color-stone)] uppercase'
                     }
                   >
                     {journey.visibility === 'PRIVATE' ? 'Private' : 'Public'}
                   </span>
                 )}
                 {formatDateRange(journey.startDate, journey.endDate) && (
-                  <span className="text-[var(--color-stone)]">
+                  <span className="font-light tracking-wide text-[var(--color-stone)]">
                     {formatDateRange(journey.startDate, journey.endDate)}
                   </span>
                 )}

@@ -5,6 +5,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Collection;
 import java.util.Set;
 import java.util.UUID;
 
@@ -170,6 +171,34 @@ public class EventPhotoService {
 		for (String objectKey : eventPhotoRepository.findObjectKeysByJourneyId(journeyId)) {
 			objectStorage.deleteObject(objectKey);
 		}
+	}
+
+	/**
+	 * First event photo per journey (earliest event, then sortOrder), as download URLs.
+	 * Journeys with no photos are omitted from the map.
+	 */
+	@Transactional(readOnly = true)
+	public Map<Long, String> resolveCoverDownloadUrls(Collection<Long> journeyIds) {
+		if (journeyIds == null || journeyIds.isEmpty()) {
+			return Map.of();
+		}
+		Map<Long, String> covers = new LinkedHashMap<>();
+		for (Object[] row : eventPhotoRepository.findCoverObjectKeysByJourneyIds(journeyIds)) {
+			Long journeyId = (Long) row[0];
+			if (covers.containsKey(journeyId)) {
+				continue;
+			}
+			String objectKey = (String) row[1];
+			covers.put(journeyId, objectStorage.createDownloadUrl(
+					objectKey,
+					Duration.ofSeconds(s3Properties.downloadUrlExpirySeconds())));
+		}
+		return covers;
+	}
+
+	@Transactional(readOnly = true)
+	public String resolveCoverDownloadUrl(Long journeyId) {
+		return resolveCoverDownloadUrls(List.of(journeyId)).get(journeyId);
 	}
 
 	/** Compact remaining photos to contiguous sortOrder values 0..n-1 after a delete. */

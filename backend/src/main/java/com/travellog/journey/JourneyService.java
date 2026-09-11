@@ -1,6 +1,8 @@
 package com.travellog.journey;
 
+import java.time.Duration;
 import java.util.List;
+import java.util.Map;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -9,6 +11,8 @@ import com.travellog.common.ApiMessages;
 import com.travellog.common.ErrorCode;
 import com.travellog.common.UnauthorizedException;
 import com.travellog.event.EventPhotoService;
+import com.travellog.storage.ObjectStorage;
+import com.travellog.storage.S3Properties;
 import com.travellog.user.User;
 import com.travellog.user.UserRepository;
 
@@ -19,16 +23,22 @@ public class JourneyService {
 	private final UserRepository userRepository;
 	private final EventPhotoService eventPhotoService;
 	private final JourneyAccess journeyAccess;
+	private final ObjectStorage objectStorage;
+	private final S3Properties s3Properties;
 
 	public JourneyService(
 			JourneyRepository journeyRepository,
 			UserRepository userRepository,
 			EventPhotoService eventPhotoService,
-			JourneyAccess journeyAccess) {
+			JourneyAccess journeyAccess,
+			ObjectStorage objectStorage,
+			S3Properties s3Properties) {
 		this.journeyRepository = journeyRepository;
 		this.userRepository = userRepository;
 		this.eventPhotoService = eventPhotoService;
 		this.journeyAccess = journeyAccess;
+		this.objectStorage = objectStorage;
+		this.s3Properties = s3Properties;
 	}
 
 	@Transactional
@@ -43,26 +53,26 @@ public class JourneyService {
 		journey.setVisibility(request.getVisibility() == null
 				? JourneyVisibility.PRIVATE
 				: request.getVisibility());
-		return JourneyResponse.from(journeyRepository.save(journey));
+		return toResponse(journeyRepository.save(journey), null);
 	}
 
 	@Transactional(readOnly = true)
 	public List<JourneyResponse> listForCurrentUser(Long userId) {
-		return journeyRepository.findByUserIdOrderByUpdatedAtDesc(userId).stream()
-				.map(JourneyResponse::from)
-				.toList();
+		List<Journey> journeys = journeyRepository.findByUserIdOrderByUpdatedAtDesc(userId);
+		return toResponses(journeys);
 	}
 
 	@Transactional(readOnly = true)
 	public List<JourneyResponse> listPublic() {
-		return journeyRepository.findByVisibilityOrderByUpdatedAtDesc(JourneyVisibility.PUBLIC).stream()
-				.map(JourneyResponse::from)
-				.toList();
+		List<Journey> journeys =
+				journeyRepository.findByVisibilityOrderByUpdatedAtDesc(JourneyVisibility.PUBLIC);
+		return toResponses(journeys);
 	}
 
 	@Transactional(readOnly = true)
 	public JourneyResponse getForCurrentUser(Long userId, Long journeyId) {
-		return JourneyResponse.from(journeyAccess.requireReadable(userId, journeyId));
+		Journey journey = journeyAccess.requireReadable(userId, journeyId);
+		return toResponse(journey, eventPhotoService.resolveCoverDownloadUrl(journey.getId()));
 	}
 
 	@Transactional
@@ -76,7 +86,8 @@ public class JourneyService {
 		if (request.getVisibility() != null) {
 			journey.setVisibility(request.getVisibility());
 		}
-		return JourneyResponse.from(journeyRepository.save(journey));
+		Journey saved = journeyRepository.save(journey);
+		return toResponse(saved, eventPhotoService.resolveCoverDownloadUrl(saved.getId()));
 	}
 
 	@Transactional
@@ -84,6 +95,27 @@ public class JourneyService {
 		Journey journey = journeyAccess.requireOwned(userId, journeyId);
 		eventPhotoService.deleteStorageForJourney(journeyId);
 		journeyRepository.delete(journey);
+	}
+
+	private List<JourneyResponse> toResponses(List<Journey> journeys) {
+		List<Long> ids = journeys.stream().map(Journey::getId).toList();
+		Map<Long, String> covers = eventPhotoService.resolveCoverDownloadUrls(ids);
+		return journeys.stream()
+				.map(journey -> toResponse(journey, covers.get(journey.getId())))
+				.toList();
+	}
+
+	private JourneyResponse toResponse(Journey journey, String coverImageUrl) {
+		return JourneyResponse.from(journey, resolveOwnerAvatarUrl(journey.getUser()), coverImageUrl);
+	}
+
+	private String resolveOwnerAvatarUrl(User user) {
+		if (user.getAvatarObjectKey() == null) {
+			return null;
+		}
+		return objectStorage.createDownloadUrl(
+				user.getAvatarObjectKey(),
+				Duration.ofSeconds(s3Properties.downloadUrlExpirySeconds()));
 	}
 
 	private User requireUser(Long userId) {

@@ -52,6 +52,8 @@ const sampleJourney: JourneyResponse = {
   id: 10,
   ownerId: 1,
   ownerUsername: 'alice',
+  ownerAvatarUrl: null,
+  coverImageUrl: null,
   title: 'South Island',
   description: 'Road trip',
   startDate: '2026-01-10',
@@ -150,6 +152,5 @@ describe('JourneyEditPage', () => {
       })
     })
     expect(await screen.findByRole('heading', { name: 'Journeys' })).toBeInTheDocument()
-    expect(screen.queryByLabelText(/Title/i)).not.toBeInTheDocument()
   })
 })

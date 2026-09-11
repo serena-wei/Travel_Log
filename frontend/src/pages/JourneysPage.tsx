@@ -96,15 +96,23 @@ export function JourneysPage() {
                     to={`/journeys/${journey.id}`}
                     className="flex min-w-0 flex-1 gap-4"
                   >
-                    <span
-                      aria-hidden="true"
-                      className="journey-mark hidden h-20 w-16 shrink-0 items-end justify-center pb-2 sm:flex"
-                    >
-                      <span className="font-[family-name:var(--font-display)] text-3xl leading-none text-white/90">
-                        {journeyInitial(journey.title)}
+                    {journey.coverImageUrl ? (
+                      <img
+                        src={journey.coverImageUrl}
+                        alt=""
+                        className="h-24 w-28 shrink-0 object-cover sm:h-28 sm:w-36"
+                      />
+                    ) : (
+                      <span
+                        aria-hidden="true"
+                        className="journey-mark flex h-24 w-28 shrink-0 items-end justify-center pb-2 sm:h-28 sm:w-36"
+                      >
+                        <span className="font-[family-name:var(--font-display)] text-3xl leading-none text-white/90">
+                          {journeyInitial(journey.title)}
+                        </span>
                       </span>
-                    </span>
-                    <span className="min-w-0 flex-1">
+                    )}
+                    <span className="min-w-0 flex-1 self-center">
                       <p className="interactive-entry-title font-[family-name:var(--font-display)] text-2xl font-medium tracking-wide text-[var(--color-ink)] transition-colors">
                         {journey.title}
                       </p>
