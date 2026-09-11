@@ -255,8 +255,17 @@ export type SaveJourneyRequest = {
   visibility?: JourneyVisibility | null
 }
 
-export async function listJourneys(accessToken: string): Promise<JourneyResponse[]> {
-  const response = await fetch(`${API_BASE_URL}${API_V1}/journeys`, {
+export async function listJourneys(
+  accessToken: string,
+  options: { query?: string } = {},
+): Promise<JourneyResponse[]> {
+  const params = new URLSearchParams()
+  const query = options.query?.trim()
+  if (query) {
+    params.set('query', query)
+  }
+  const suffix = params.toString() ? `?${params}` : ''
+  const response = await fetch(`${API_BASE_URL}${API_V1}/journeys${suffix}`, {
     headers: authHeaders(accessToken),
   })
   if (!response.ok) {
@@ -269,7 +278,7 @@ export const PUBLIC_JOURNEYS_PAGE_SIZE = 10
 
 export async function listPublicJourneys(
   accessToken: string,
-  options: { page?: number; size?: number } = {},
+  options: { page?: number; size?: number; query?: string } = {},
 ): Promise<PageResponse<JourneyResponse>> {
   const page = options.page ?? 0
   const size = options.size ?? PUBLIC_JOURNEYS_PAGE_SIZE
@@ -277,6 +286,10 @@ export async function listPublicJourneys(
     page: String(page),
     size: String(size),
   })
+  const query = options.query?.trim()
+  if (query) {
+    params.set('query', query)
+  }
   const response = await fetch(`${API_BASE_URL}${API_V1}/public/journeys?${params}`, {
     headers: authHeaders(accessToken),
   })

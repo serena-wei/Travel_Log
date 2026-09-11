@@ -121,6 +121,25 @@ class PublicJourneyIntegrationTest {
 	}
 
 	@Test
+	void listPublicFiltersByTitleOrDescriptionQuery() throws Exception {
+		String aliceToken = loginAndGetToken("alice", "Secret123");
+		String bobToken = loginAndGetToken("bob", "Secret123");
+
+		Long titleMatchId = createJourney(aliceToken, "Kyoto temples", "PUBLIC", null);
+		Long descriptionMatchId = createJourney(aliceToken, "Spring break", "PUBLIC", "Walking around Kyoto Gion");
+		createJourney(aliceToken, "Queenstown hike", "PUBLIC", "South Island trails");
+
+		mockMvc.perform(get("/api/v1/public/journeys")
+						.param("query", "kyoto")
+						.header(HttpHeaders.AUTHORIZATION, "Bearer " + bobToken))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.totalElements").value(2))
+				.andExpect(jsonPath("$.content.length()").value(2))
+				.andExpect(jsonPath("$.content[?(@.id == " + titleMatchId + ")]").exists())
+				.andExpect(jsonPath("$.content[?(@.id == " + descriptionMatchId + ")]").exists());
+	}
+
+	@Test
 	void otherUserCanReadPublicJourneyDetailWithEventsAndPhotos() throws Exception {
 		String aliceToken = loginAndGetToken("alice", "Secret123");
 		String bobToken = loginAndGetToken("bob", "Secret123");
@@ -173,15 +192,23 @@ class PublicJourneyIntegrationTest {
 	}
 
 	private Long createJourney(String token, String title, String visibility) throws Exception {
+		return createJourney(token, title, visibility, null);
+	}
+
+	private Long createJourney(String token, String title, String visibility, String description)
+			throws Exception {
+		String descriptionJson = description == null
+				? ""
+				: ",\n\"description\": \"%s\"".formatted(description);
 		MvcResult result = mockMvc.perform(post("/api/v1/journeys")
 						.header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
 						.contentType(MediaType.APPLICATION_JSON)
 						.content("""
 								{
 								  "title": "%s",
-								  "visibility": "%s"
+								  "visibility": "%s"%s
 								}
-								""".formatted(title, visibility)))
+								""".formatted(title, visibility, descriptionJson)))
 				.andExpect(status().isCreated())
 				.andReturn();
 		return objectMapper.readTree(result.getResponse().getContentAsString()).get("id").asLong();

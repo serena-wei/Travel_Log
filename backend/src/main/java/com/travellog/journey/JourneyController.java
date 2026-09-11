@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.travellog.security.TravelLogUserDetails;
@@ -37,8 +38,10 @@ public class JourneyController {
 	}
 
 	@GetMapping
-	public List<JourneyResponse> list(@AuthenticationPrincipal TravelLogUserDetails principal) {
-		return journeyService.listForCurrentUser(principal.getUserId());
+	public List<JourneyResponse> list(
+			@AuthenticationPrincipal TravelLogUserDetails principal,
+			@RequestParam(required = false) String query) {
+		return journeyService.listForCurrentUser(principal.getUserId(), query);
 	}
 
 	@GetMapping("/{id}")

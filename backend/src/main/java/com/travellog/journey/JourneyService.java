@@ -6,6 +6,7 @@ import java.util.Map;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -63,18 +64,26 @@ public class JourneyService {
 	}
 
 	@Transactional(readOnly = true)
-	public List<JourneyResponse> listForCurrentUser(Long userId) {
-		List<Journey> journeys = journeyRepository.findByUserIdOrderByUpdatedAtDesc(userId);
+	public List<JourneyResponse> listForCurrentUser(Long userId, String query) {
+		String queryPattern = toSearchPattern(query);
+		List<Journey> journeys = queryPattern == null
+				? journeyRepository.findByUserIdOrderByUpdatedAtDesc(userId)
+				: journeyRepository.findByUserIdAndTitleOrDescriptionContainingIgnoreCase(
+						userId, queryPattern);
 		return toResponses(journeys);
 	}
 
 	@Transactional(readOnly = true)
-	public PageResponse<JourneyResponse> listPublic(int page, int size) {
+	public PageResponse<JourneyResponse> listPublic(int page, int size, String query) {
 		int safePage = Math.max(page, 0);
 		int safeSize = Math.min(Math.max(size, 1), MAX_PUBLIC_PAGE_SIZE);
-		Page<Journey> journeys = journeyRepository.findByVisibilityOrderByUpdatedAtDesc(
-				JourneyVisibility.PUBLIC,
-				PageRequest.of(safePage, safeSize));
+		Pageable pageable = PageRequest.of(safePage, safeSize);
+		String queryPattern = toSearchPattern(query);
+		Page<Journey> journeys = queryPattern == null
+				? journeyRepository.findByVisibilityOrderByUpdatedAtDesc(
+						JourneyVisibility.PUBLIC, pageable)
+				: journeyRepository.findByVisibilityAndTitleOrDescriptionContainingIgnoreCase(
+						JourneyVisibility.PUBLIC, queryPattern, pageable);
 		List<JourneyResponse> content = toResponses(journeys.getContent());
 		return new PageResponse<>(
 				content,
@@ -145,5 +154,18 @@ public class JourneyService {
 			return null;
 		}
 		return value.trim();
+	}
+
+	private static String toSearchPattern(String query) {
+		String trimmed = trimToNull(query);
+		if (trimmed == null) {
+			return null;
+		}
+		// Strip LIKE wildcards so user input is treated as literal text.
+		String sanitized = trimmed.replace("%", "").replace("_", "");
+		if (sanitized.isBlank()) {
+			return null;
+		}
+		return "%" + sanitized + "%";
 	}
 }

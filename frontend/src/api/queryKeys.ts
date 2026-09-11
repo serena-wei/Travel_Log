@@ -2,8 +2,9 @@ export const queryKeys = {
   health: ['health'] as const,
   journeys: {
     all: ['journeys'] as const,
+    mine: (query = '') => ['journeys', 'mine', { query }] as const,
     public: ['journeys', 'public'] as const,
-    publicPage: (page: number) => ['journeys', 'public', { page }] as const,
+    publicPage: (page: number, query = '') => ['journeys', 'public', { page, query }] as const,
     detail: (id: number) => ['journeys', id] as const,
   },
   events: {
