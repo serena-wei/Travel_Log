@@ -77,12 +77,47 @@ class PublicJourneyIntegrationTest {
 		mockMvc.perform(get("/api/v1/public/journeys")
 						.header(HttpHeaders.AUTHORIZATION, "Bearer " + bobToken))
 				.andExpect(status().isOk())
-				.andExpect(jsonPath("$.length()").value(2))
-				.andExpect(jsonPath("$[0].id").value(alicePublicOlderId.intValue()))
-				.andExpect(jsonPath("$[0].title").value("Alice Public Updated"))
-				.andExpect(jsonPath("$[0].ownerUsername").value("alice"))
-				.andExpect(jsonPath("$[1].id").value(bobPublicId.intValue()))
-				.andExpect(jsonPath("$[1].ownerUsername").value("bob"));
+				.andExpect(jsonPath("$.content.length()").value(2))
+				.andExpect(jsonPath("$.page").value(0))
+				.andExpect(jsonPath("$.size").value(10))
+				.andExpect(jsonPath("$.totalElements").value(2))
+				.andExpect(jsonPath("$.totalPages").value(1))
+				.andExpect(jsonPath("$.content[0].id").value(alicePublicOlderId.intValue()))
+				.andExpect(jsonPath("$.content[0].title").value("Alice Public Updated"))
+				.andExpect(jsonPath("$.content[0].ownerUsername").value("alice"))
+				.andExpect(jsonPath("$.content[1].id").value(bobPublicId.intValue()))
+				.andExpect(jsonPath("$.content[1].ownerUsername").value("bob"));
+	}
+
+	@Test
+	void listPublicSupportsPagination() throws Exception {
+		String aliceToken = loginAndGetToken("alice", "Secret123");
+		String bobToken = loginAndGetToken("bob", "Secret123");
+
+		for (int i = 1; i <= 12; i++) {
+			createJourney(aliceToken, "Public " + i, "PUBLIC");
+		}
+
+		mockMvc.perform(get("/api/v1/public/journeys")
+						.param("page", "0")
+						.param("size", "10")
+						.header(HttpHeaders.AUTHORIZATION, "Bearer " + bobToken))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.content.length()").value(10))
+				.andExpect(jsonPath("$.page").value(0))
+				.andExpect(jsonPath("$.size").value(10))
+				.andExpect(jsonPath("$.totalElements").value(12))
+				.andExpect(jsonPath("$.totalPages").value(2));
+
+		mockMvc.perform(get("/api/v1/public/journeys")
+						.param("page", "1")
+						.param("size", "10")
+						.header(HttpHeaders.AUTHORIZATION, "Bearer " + bobToken))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.content.length()").value(2))
+				.andExpect(jsonPath("$.page").value(1))
+				.andExpect(jsonPath("$.totalElements").value(12))
+				.andExpect(jsonPath("$.totalPages").value(2));
 	}
 
 	@Test

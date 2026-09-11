@@ -239,6 +239,14 @@ export type JourneyResponse = {
   updatedAt: string
 }
 
+export type PageResponse<T> = {
+  content: T[]
+  page: number
+  size: number
+  totalElements: number
+  totalPages: number
+}
+
 export type SaveJourneyRequest = {
   title: string
   description?: string | null
@@ -257,14 +265,25 @@ export async function listJourneys(accessToken: string): Promise<JourneyResponse
   return response.json() as Promise<JourneyResponse[]>
 }
 
-export async function listPublicJourneys(accessToken: string): Promise<JourneyResponse[]> {
-  const response = await fetch(`${API_BASE_URL}${API_V1}/public/journeys`, {
+export const PUBLIC_JOURNEYS_PAGE_SIZE = 10
+
+export async function listPublicJourneys(
+  accessToken: string,
+  options: { page?: number; size?: number } = {},
+): Promise<PageResponse<JourneyResponse>> {
+  const page = options.page ?? 0
+  const size = options.size ?? PUBLIC_JOURNEYS_PAGE_SIZE
+  const params = new URLSearchParams({
+    page: String(page),
+    size: String(size),
+  })
+  const response = await fetch(`${API_BASE_URL}${API_V1}/public/journeys?${params}`, {
     headers: authHeaders(accessToken),
   })
   if (!response.ok) {
     throw await parseApiError(response)
   }
-  return response.json() as Promise<JourneyResponse[]>
+  return response.json() as Promise<PageResponse<JourneyResponse>>
 }
 
 export async function getJourney(accessToken: string, id: number): Promise<JourneyResponse> {

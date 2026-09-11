@@ -3,6 +3,7 @@ export const queryKeys = {
   journeys: {
     all: ['journeys'] as const,
     public: ['journeys', 'public'] as const,
+    publicPage: (page: number) => ['journeys', 'public', { page }] as const,
     detail: (id: number) => ['journeys', id] as const,
   },
   events: {

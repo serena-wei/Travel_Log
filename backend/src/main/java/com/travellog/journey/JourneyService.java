@@ -4,11 +4,14 @@ import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.travellog.common.ApiMessages;
 import com.travellog.common.ErrorCode;
+import com.travellog.common.PageResponse;
 import com.travellog.common.UnauthorizedException;
 import com.travellog.event.EventPhotoService;
 import com.travellog.storage.ObjectStorage;
@@ -18,6 +21,9 @@ import com.travellog.user.UserRepository;
 
 @Service
 public class JourneyService {
+
+	static final int DEFAULT_PUBLIC_PAGE_SIZE = 10;
+	static final int MAX_PUBLIC_PAGE_SIZE = 50;
 
 	private final JourneyRepository journeyRepository;
 	private final UserRepository userRepository;
@@ -63,10 +69,19 @@ public class JourneyService {
 	}
 
 	@Transactional(readOnly = true)
-	public List<JourneyResponse> listPublic() {
-		List<Journey> journeys =
-				journeyRepository.findByVisibilityOrderByUpdatedAtDesc(JourneyVisibility.PUBLIC);
-		return toResponses(journeys);
+	public PageResponse<JourneyResponse> listPublic(int page, int size) {
+		int safePage = Math.max(page, 0);
+		int safeSize = Math.min(Math.max(size, 1), MAX_PUBLIC_PAGE_SIZE);
+		Page<Journey> journeys = journeyRepository.findByVisibilityOrderByUpdatedAtDesc(
+				JourneyVisibility.PUBLIC,
+				PageRequest.of(safePage, safeSize));
+		List<JourneyResponse> content = toResponses(journeys.getContent());
+		return new PageResponse<>(
+				content,
+				journeys.getNumber(),
+				journeys.getSize(),
+				journeys.getTotalElements(),
+				journeys.getTotalPages());
 	}
 
 	@Transactional(readOnly = true)

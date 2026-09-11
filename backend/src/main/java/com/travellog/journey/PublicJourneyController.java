@@ -1,10 +1,11 @@
 package com.travellog.journey;
 
-import java.util.List;
-
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+
+import com.travellog.common.PageResponse;
 
 @RestController
 @RequestMapping("/api/v1/public/journeys")
@@ -17,7 +18,9 @@ public class PublicJourneyController {
 	}
 
 	@GetMapping
-	public List<JourneyResponse> list() {
-		return journeyService.listPublic();
+	public PageResponse<JourneyResponse> list(
+			@RequestParam(defaultValue = "0") int page,
+			@RequestParam(defaultValue = "10") int size) {
+		return journeyService.listPublic(page, size);
 	}
 }
