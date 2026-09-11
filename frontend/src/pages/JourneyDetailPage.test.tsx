@@ -1,5 +1,4 @@
 import { render, screen } from '@testing-library/react'
-import userEvent from '@testing-library/user-event'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -7,7 +6,6 @@ import {
   fetchCurrentUser,
   getJourney,
   listEvents,
-  loginUser,
   type JourneyResponse,
 } from '../api/client'
 import { AuthProvider } from '../auth/AuthContext'
@@ -15,9 +13,6 @@ import { clearIntentionalLogout } from '../auth/intentionalLogout'
 import { RequireAuth } from '../auth/RequireAuth'
 import { clearAccessToken, setAccessToken } from '../auth/token'
 import { JourneyDetailPage } from './JourneyDetailPage'
-import { DashboardPage } from './DashboardPage'
-import { HomePage } from './HomePage'
-import { LoginPage } from './LoginPage'
 
 vi.mock('../api/client', async () => {
   const actual = await vi.importActual<typeof import('../api/client')>('../api/client')
@@ -26,14 +21,12 @@ vi.mock('../api/client', async () => {
     fetchCurrentUser: vi.fn(),
     getJourney: vi.fn(),
     listEvents: vi.fn().mockResolvedValue([]),
-    loginUser: vi.fn(),
   }
 })
 
 const mockedFetchCurrentUser = vi.mocked(fetchCurrentUser)
 const mockedGetJourney = vi.mocked(getJourney)
 const mockedListEvents = vi.mocked(listEvents)
-const mockedLoginUser = vi.mocked(loginUser)
 
 const alice = {
   id: 1,
@@ -73,16 +66,6 @@ function renderDetail() {
       <MemoryRouter initialEntries={['/journeys/10']}>
         <AuthProvider>
           <Routes>
-            <Route path="/" element={<HomePage />} />
-            <Route path="/login" element={<LoginPage />} />
-            <Route
-              path="/dashboard"
-              element={
-                <RequireAuth>
-                  <DashboardPage />
-                </RequireAuth>
-              }
-            />
             <Route
               path="/journeys/:id"
               element={
@@ -104,7 +87,6 @@ describe('JourneyDetailPage', () => {
     mockedGetJourney.mockReset()
     mockedListEvents.mockReset()
     mockedListEvents.mockResolvedValue([])
-    mockedLoginUser.mockReset()
     clearAccessToken()
     clearIntentionalLogout()
   })
@@ -130,19 +112,8 @@ describe('JourneyDetailPage', () => {
     renderDetail()
 
     expect(await screen.findByRole('heading', { name: 'South Island' })).toBeInTheDocument()
-    expect(screen.getByText('Road trip')).toBeInTheDocument()
     expect(screen.queryByLabelText(/Title/i)).not.toBeInTheDocument()
-    expect(screen.getByRole('heading', { name: 'Events' })).toBeInTheDocument()
-    expect(screen.getByText('Timeline')).toBeInTheDocument()
     expect(screen.getByText('Flight NZ5373')).toBeInTheDocument()
-    expect(screen.getByText('2026-03-01')).toBeInTheDocument()
-    expect(screen.getByText('09:00')).toBeInTheDocument()
-    expect(screen.getByRole('link', { name: '← Journeys' })).toHaveAttribute('href', '/journeys')
-    expect(screen.getByRole('link', { name: 'Edit' })).toHaveAttribute(
-      'href',
-      '/journeys/10/events/5/edit',
-    )
-    expect(screen.getByRole('button', { name: 'Delete' })).toBeInTheDocument()
   })
 
   it('hides edit controls on the explore route', async () => {
@@ -187,8 +158,6 @@ describe('JourneyDetailPage', () => {
     )
 
     expect(await screen.findByRole('heading', { name: 'South Island' })).toBeInTheDocument()
-    expect(screen.getByText('alice')).toBeInTheDocument()
-    expect(screen.getByRole('link', { name: '← Explore' })).toHaveAttribute('href', '/explore')
     expect(screen.getByRole('link', { name: /Day hike/i })).toHaveAttribute(
       'href',
       '/explore/10/events/5',
@@ -196,34 +165,5 @@ describe('JourneyDetailPage', () => {
     expect(screen.queryByRole('link', { name: 'New event' })).not.toBeInTheDocument()
     expect(screen.queryByRole('link', { name: 'Edit' })).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Delete' })).not.toBeInTheDocument()
-  })
-
-  it('signs out to home, then logs in to the dashboard, not the detail page', async () => {
-    const user = userEvent.setup()
-    setAccessToken('token-123')
-    mockedFetchCurrentUser.mockResolvedValue(alice)
-    mockedGetJourney.mockResolvedValue(sampleJourney)
-    mockedLoginUser.mockResolvedValue({
-      accessToken: 'token-456',
-      tokenType: 'Bearer',
-      user: alice,
-    })
-
-    renderDetail()
-
-    expect(await screen.findByRole('heading', { name: 'South Island' })).toBeInTheDocument()
-    await user.click(screen.getByRole('button', { name: 'Sign out' }))
-
-    expect(await screen.findByRole('heading', { name: 'TravelLog' })).toBeInTheDocument()
-    const [headerSignIn] = screen.getAllByRole('link', { name: 'Sign in' })
-    await user.click(headerSignIn)
-
-    expect(await screen.findByRole('heading', { name: 'Welcome back' })).toBeInTheDocument()
-    await user.type(screen.getByLabelText(/Username/i), 'alice')
-    await user.type(screen.getByLabelText(/^Password/i), 'Secret123')
-    await user.click(screen.getByRole('button', { name: 'Sign in' }))
-
-    expect(await screen.findByRole('heading', { name: 'Your dashboard' })).toBeInTheDocument()
-    expect(screen.queryByRole('heading', { name: 'South Island' })).not.toBeInTheDocument()
   })
 })

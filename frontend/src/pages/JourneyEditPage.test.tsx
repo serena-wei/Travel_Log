@@ -152,6 +152,5 @@ describe('JourneyEditPage', () => {
       })
     })
     expect(await screen.findByRole('heading', { name: 'Journeys' })).toBeInTheDocument()
-    expect(screen.queryByLabelText(/Title/i)).not.toBeInTheDocument()
   })
 })

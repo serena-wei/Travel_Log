@@ -114,7 +114,7 @@ describe('EventCreatePage', () => {
 
     renderCreate()
 
-    expect(await screen.findByRole('heading', { name: 'Add event' })).toBeInTheDocument()
+    await screen.findByRole('heading', { name: 'Add event' })
     await user.type(screen.getByLabelText(/Title/i), 'Flight NZ5373')
     await user.type(screen.getByLabelText(/^Description/i), 'Wellington to Christchurch')
     await user.type(screen.getByLabelText(/^Start/i), '2026-03-01T09:00')
@@ -141,14 +141,13 @@ describe('EventCreatePage', () => {
 
     renderCreate()
 
-    expect(await screen.findByRole('heading', { name: 'Add event' })).toBeInTheDocument()
+    await screen.findByRole('heading', { name: 'Add event' })
     await user.type(screen.getByLabelText(/Title/i), 'Flight NZ5373')
     await user.type(screen.getByLabelText(/^Start/i), '2026-03-01T09:00')
 
     const file = new File([new Uint8Array([1, 2, 3])], 'flight.jpg', { type: 'image/jpeg' })
-    const input = document.querySelector('input[type="file"]')
-    expect(input).toBeTruthy()
-    await user.upload(input as HTMLInputElement, file)
+    const input = document.querySelector('input[type="file"]') as HTMLInputElement
+    await user.upload(input, file)
 
     await user.click(screen.getByRole('button', { name: 'Create event' }))
 

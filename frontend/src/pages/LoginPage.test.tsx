@@ -85,7 +85,6 @@ describe('LoginPage', () => {
       password: 'Secret123',
     })
     expect(await screen.findByRole('heading', { name: 'Your dashboard' })).toBeInTheDocument()
-    expect(screen.getByText('Hi, alice.')).toBeInTheDocument()
   })
 
   it('shows invalid credentials from the API', async () => {

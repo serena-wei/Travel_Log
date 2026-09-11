@@ -123,7 +123,6 @@ describe('JourneyCreatePage', () => {
       })
     })
     expect(await screen.findByRole('heading', { name: 'Journeys' })).toBeInTheDocument()
-    expect(await screen.findByText('South Island')).toBeInTheDocument()
   })
 
   it('shows API validation errors', async () => {

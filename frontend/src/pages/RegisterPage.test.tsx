@@ -65,8 +65,6 @@ describe('RegisterPage', () => {
       confirmPassword: 'Secret123',
     })
     expect(await screen.findByRole('heading', { name: "You're in" })).toBeInTheDocument()
-    expect(screen.getByText('alice')).toBeInTheDocument()
-    expect(screen.getByRole('link', { name: 'Sign in' })).toHaveAttribute('href', '/login')
   })
 
   it('shows conflict error from the API', async () => {

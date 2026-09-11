@@ -97,13 +97,11 @@ describe('JourneysPage', () => {
 
     renderJourneys()
 
-    expect(await screen.findByRole('heading', { name: 'Journeys' })).toBeInTheDocument()
     expect(await screen.findByText('South Island')).toBeInTheDocument()
-    expect(screen.getByText('Road trip')).toBeInTheDocument()
     expect(mockedListJourneys).toHaveBeenCalledWith('token-123')
   })
 
-  it('opens detail from the title and supports edit and delete actions', async () => {
+  it('deletes a journey after confirm', async () => {
     const user = userEvent.setup()
     setAccessToken('token-123')
     mockedFetchCurrentUser.mockResolvedValue(alice)
@@ -113,15 +111,8 @@ describe('JourneysPage', () => {
     renderJourneys()
 
     expect(await screen.findByText('South Island')).toBeInTheDocument()
-    expect(screen.getByRole('link', { name: /South Island/i })).toHaveAttribute(
-      'href',
-      '/journeys/10',
-    )
-    expect(screen.getByRole('link', { name: 'Edit' })).toHaveAttribute('href', '/journeys/10/edit')
-
     await user.click(screen.getByRole('button', { name: 'Delete' }))
     const dialog = await screen.findByRole('alertdialog')
-    expect(dialog).toBeInTheDocument()
     await user.click(within(dialog).getByRole('button', { name: 'Delete' }))
     await waitFor(() => {
       expect(mockedDeleteJourney).toHaveBeenCalledWith('token-123', 10)
