@@ -1,3 +1,5 @@
+import { useEffect, useState } from 'react'
+import type { FormEvent, KeyboardEvent } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import {
@@ -14,11 +16,21 @@ export function PublicJourneysPage() {
   const { accessToken } = useAuth()
   const [searchParams, setSearchParams] = useSearchParams()
   const page = parsePageParam(searchParams.get('page'))
+  const query = (searchParams.get('query') ?? '').trim()
+  const [draftQuery, setDraftQuery] = useState(query)
+
+  useEffect(() => {
+    setDraftQuery(query)
+  }, [query])
 
   const journeysQuery = useQuery({
-    queryKey: queryKeys.journeys.publicPage(page),
+    queryKey: queryKeys.journeys.publicPage(page, query),
     queryFn: () =>
-      listPublicJourneys(accessToken!, { page, size: PUBLIC_JOURNEYS_PAGE_SIZE }),
+      listPublicJourneys(accessToken!, {
+        page,
+        size: PUBLIC_JOURNEYS_PAGE_SIZE,
+        query,
+      }),
     enabled: Boolean(accessToken),
     placeholderData: keepPreviousData,
   })
@@ -29,23 +41,107 @@ export function PublicJourneysPage() {
   const canGoPrevious = page > 0
   const canGoNext = totalPages > 0 && page < totalPages - 1
 
+  function applySearchParams(nextQuery: string, nextPage: number) {
+    const params = new URLSearchParams()
+    const trimmedQuery = nextQuery.trim()
+    if (trimmedQuery) {
+      params.set('query', trimmedQuery)
+    }
+    if (nextPage > 0) {
+      params.set('page', String(nextPage))
+    }
+    setSearchParams(params, { replace: false })
+  }
+
+  function runSearch(rawQuery: string) {
+    const nextQuery = rawQuery.trim()
+    setDraftQuery(nextQuery)
+
+    if (nextQuery === query && page === 0) {
+      void journeysQuery.refetch()
+      return
+    }
+
+    applySearchParams(nextQuery, 0)
+  }
+
   function goToPage(nextPage: number) {
-    setSearchParams(nextPage <= 0 ? {} : { page: String(nextPage) }, { replace: false })
+    applySearchParams(query, nextPage)
+  }
+
+  function handleSearchSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    runSearch(draftQuery)
+  }
+
+  function handleSearchKeyDown(event: KeyboardEvent<HTMLInputElement>) {
+    if (event.key !== 'Enter') {
+      return
+    }
+    event.preventDefault()
+    runSearch(event.currentTarget.value)
+  }
+
+  function clearSearch() {
+    setDraftQuery('')
+    if (!query && page === 0) {
+      void journeysQuery.refetch()
+      return
+    }
+    applySearchParams('', 0)
   }
 
   return (
     <AppShell>
       <main className="mx-auto max-w-6xl px-6 py-12 sm:px-10 sm:py-16">
-        <div className="page-intro">
-          <p className="mb-3 text-[11px] font-medium tracking-[0.28em] text-[var(--color-gold)] uppercase">
-            Community
-          </p>
-          <h1 className="font-[family-name:var(--font-display)] text-4xl font-medium tracking-wide text-[var(--color-ink)] sm:text-5xl">
-            Explore
-          </h1>
-          <p className="mt-3 max-w-xl font-light text-[var(--color-stone)]">
-            Browse public journeys, newest updates first. Editing stays in My journeys.
-          </p>
+        <div className="page-intro flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <p className="mb-3 text-[11px] font-medium tracking-[0.28em] text-[var(--color-gold)] uppercase">
+              Community
+            </p>
+            <h1 className="font-[family-name:var(--font-display)] text-4xl font-medium tracking-wide text-[var(--color-ink)] sm:text-5xl">
+              Explore
+            </h1>
+            <p className="mt-3 max-w-xl font-light text-[var(--color-stone)]">
+              Browse public journeys, newest updates first. Editing stays in My journeys.
+            </p>
+          </div>
+
+          <form
+            onSubmit={handleSearchSubmit}
+            className="flex shrink-0 flex-wrap items-center gap-2 sm:justify-end"
+            role="search"
+          >
+            <label htmlFor="explore-query" className="sr-only">
+              Search journeys
+            </label>
+            <input
+              id="explore-query"
+              name="query"
+              type="text"
+              value={draftQuery}
+              onChange={(event) => setDraftQuery(event.target.value)}
+              onKeyDown={handleSearchKeyDown}
+              placeholder="search by place"
+              autoComplete="off"
+              className="w-full min-w-[12rem] border border-[var(--color-line)] bg-[var(--color-paper)] px-3.5 py-2.5 text-sm text-[var(--color-ink)] outline-none transition focus:border-[var(--color-sea)] sm:w-56"
+            />
+            <button
+              type="submit"
+              className="border border-[var(--color-line)] bg-[var(--color-paper)] px-4 py-2.5 text-[11px] font-medium tracking-[0.2em] text-[var(--color-ink)] uppercase transition hover:border-[var(--color-sea)]"
+            >
+              Search
+            </button>
+            {query && (
+              <button
+                type="button"
+                onClick={clearSearch}
+                className="px-2 text-sm font-light text-[var(--color-stone)] transition hover:text-[var(--color-ink)]"
+              >
+                Clear
+              </button>
+            )}
+          </form>
         </div>
 
         <section className="mt-12">
@@ -63,7 +159,9 @@ export function PublicJourneysPage() {
 
           {pageData && pageData.totalElements === 0 && (
             <p className="text-sm font-light text-[var(--color-stone)]">
-              No public journeys yet. Share one of yours to appear here.
+              {query
+                ? `No public journeys match “${query}”.`
+                : 'No public journeys yet. Share one of yours to appear here.'}
             </p>
           )}
 

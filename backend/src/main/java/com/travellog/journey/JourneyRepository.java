@@ -13,6 +13,19 @@ public interface JourneyRepository extends JpaRepository<Journey, Long> {
 
 	List<Journey> findByUserIdOrderByUpdatedAtDesc(Long userId);
 
+	@Query("""
+			SELECT j FROM Journey j JOIN FETCH j.user
+			WHERE j.user.id = :userId
+			  AND (
+			    LOWER(j.title) LIKE LOWER(:queryPattern)
+			    OR LOWER(COALESCE(j.description, '')) LIKE LOWER(:queryPattern)
+			  )
+			ORDER BY j.updatedAt DESC
+			""")
+	List<Journey> findByUserIdAndTitleOrDescriptionContainingIgnoreCase(
+			@Param("userId") Long userId,
+			@Param("queryPattern") String queryPattern);
+
 	Optional<Journey> findByIdAndUserId(Long id, Long userId);
 
 	@Query(
@@ -27,6 +40,29 @@ public interface JourneyRepository extends JpaRepository<Journey, Long> {
 					""")
 	Page<Journey> findByVisibilityOrderByUpdatedAtDesc(
 			@Param("visibility") JourneyVisibility visibility,
+			Pageable pageable);
+
+	@Query(
+			value = """
+					SELECT j FROM Journey j JOIN FETCH j.user
+					WHERE j.visibility = :visibility
+					  AND (
+					    LOWER(j.title) LIKE LOWER(:queryPattern)
+					    OR LOWER(COALESCE(j.description, '')) LIKE LOWER(:queryPattern)
+					  )
+					ORDER BY j.updatedAt DESC
+					""",
+			countQuery = """
+					SELECT count(j) FROM Journey j
+					WHERE j.visibility = :visibility
+					  AND (
+					    LOWER(j.title) LIKE LOWER(:queryPattern)
+					    OR LOWER(COALESCE(j.description, '')) LIKE LOWER(:queryPattern)
+					  )
+					""")
+	Page<Journey> findByVisibilityAndTitleOrDescriptionContainingIgnoreCase(
+			@Param("visibility") JourneyVisibility visibility,
+			@Param("queryPattern") String queryPattern,
 			Pageable pageable);
 
 	@Query("""

@@ -20,7 +20,8 @@ public class PublicJourneyController {
 	@GetMapping
 	public PageResponse<JourneyResponse> list(
 			@RequestParam(defaultValue = "0") int page,
-			@RequestParam(defaultValue = "10") int size) {
-		return journeyService.listPublic(page, size);
+			@RequestParam(defaultValue = "10") int size,
+			@RequestParam(required = false) String query) {
+		return journeyService.listPublic(page, size, query);
 	}
 }

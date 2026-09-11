@@ -1,5 +1,6 @@
-import { useState } from 'react'
-import { Link } from 'react-router-dom'
+import { useEffect, useState } from 'react'
+import type { FormEvent, KeyboardEvent } from 'react'
+import { Link, useSearchParams } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { ApiError, deleteJourney, listJourneys } from '../api/client'
 import { queryKeys } from '../api/queryKeys'
@@ -10,11 +11,18 @@ import { ConfirmDialog } from '../components/ConfirmDialog'
 export function JourneysPage() {
   const queryClient = useQueryClient()
   const { accessToken } = useAuth()
+  const [searchParams, setSearchParams] = useSearchParams()
+  const query = (searchParams.get('query') ?? '').trim()
+  const [draftQuery, setDraftQuery] = useState(query)
   const [pendingDelete, setPendingDelete] = useState<{ id: number; title: string } | null>(null)
 
+  useEffect(() => {
+    setDraftQuery(query)
+  }, [query])
+
   const journeysQuery = useQuery({
-    queryKey: queryKeys.journeys.all,
-    queryFn: () => listJourneys(accessToken!),
+    queryKey: queryKeys.journeys.mine(query),
+    queryFn: () => listJourneys(accessToken!, { query }),
     enabled: Boolean(accessToken),
   })
 
@@ -28,10 +36,53 @@ export function JourneysPage() {
     },
   })
 
+  function applySearchParams(nextQuery: string) {
+    const params = new URLSearchParams()
+    const trimmedQuery = nextQuery.trim()
+    if (trimmedQuery) {
+      params.set('query', trimmedQuery)
+    }
+    setSearchParams(params, { replace: false })
+  }
+
+  function runSearch(rawQuery: string) {
+    const nextQuery = rawQuery.trim()
+    setDraftQuery(nextQuery)
+    if (nextQuery === query) {
+      void journeysQuery.refetch()
+      return
+    }
+    applySearchParams(nextQuery)
+  }
+
+  function handleSearchSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    runSearch(draftQuery)
+  }
+
+  function handleSearchKeyDown(event: KeyboardEvent<HTMLInputElement>) {
+    if (event.key !== 'Enter') {
+      return
+    }
+    event.preventDefault()
+    runSearch(event.currentTarget.value)
+  }
+
+  function clearSearch() {
+    setDraftQuery('')
+    if (!query) {
+      void journeysQuery.refetch()
+      return
+    }
+    applySearchParams('')
+  }
+
+  const journeys = journeysQuery.data ?? []
+
   return (
     <AppShell>
       <main className="mx-auto max-w-6xl px-6 py-12 sm:px-10 sm:py-16">
-        <div className="flex items-start justify-between gap-4">
+        <div className="flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
           <div className="page-intro">
             <p className="mb-3 text-[11px] font-medium tracking-[0.28em] text-[var(--color-gold)] uppercase">
               Your journal
@@ -43,12 +94,50 @@ export function JourneysPage() {
               Open a trip to see its timeline, or edit details anytime.
             </p>
           </div>
-          <Link
-            to="/journeys/new"
-            className="shrink-0 bg-[var(--color-sea)] px-5 py-3 text-[11px] font-medium tracking-[0.2em] !text-white uppercase transition hover:bg-[var(--color-sea-deep)]"
-          >
-            New journey
-          </Link>
+
+          <div className="flex shrink-0 flex-wrap items-center gap-2 sm:justify-end">
+            <form
+              onSubmit={handleSearchSubmit}
+              className="flex flex-wrap items-center gap-2"
+              role="search"
+            >
+              <label htmlFor="journeys-query" className="sr-only">
+                Search journeys
+              </label>
+              <input
+                id="journeys-query"
+                name="query"
+                type="text"
+                value={draftQuery}
+                onChange={(event) => setDraftQuery(event.target.value)}
+                onKeyDown={handleSearchKeyDown}
+                placeholder="search by place"
+                autoComplete="off"
+                className="w-full min-w-[12rem] border border-[var(--color-line)] bg-[var(--color-paper)] px-3.5 py-2.5 text-sm text-[var(--color-ink)] outline-none transition focus:border-[var(--color-sea)] sm:w-56"
+              />
+              <button
+                type="submit"
+                className="border border-[var(--color-line)] bg-[var(--color-paper)] px-4 py-2.5 text-[11px] font-medium tracking-[0.2em] text-[var(--color-ink)] uppercase transition hover:border-[var(--color-sea)]"
+              >
+                Search
+              </button>
+              {query && (
+                <button
+                  type="button"
+                  onClick={clearSearch}
+                  className="px-2 text-sm font-light text-[var(--color-stone)] transition hover:text-[var(--color-ink)]"
+                >
+                  Clear
+                </button>
+              )}
+            </form>
+            <Link
+              to="/journeys/new"
+              className="bg-[var(--color-sea)] px-5 py-2.5 text-[11px] font-medium tracking-[0.2em] !text-white uppercase transition hover:bg-[var(--color-sea-deep)]"
+            >
+              New journey
+            </Link>
+          </div>
         </div>
 
         <section className="mt-12">
@@ -72,22 +161,28 @@ export function JourneysPage() {
             </p>
           )}
 
-          {journeysQuery.data && journeysQuery.data.length === 0 && (
+          {journeysQuery.data && journeys.length === 0 && (
             <p className="text-sm font-light text-[var(--color-stone)]">
-              No journeys yet.{' '}
-              <Link
-                to="/journeys/new"
-                className="font-medium text-[var(--color-sea)] underline-offset-4 hover:underline"
-              >
-                Create your first one
-              </Link>
-              .
+              {query ? (
+                <>No journeys match “{query}”.</>
+              ) : (
+                <>
+                  No journeys yet.{' '}
+                  <Link
+                    to="/journeys/new"
+                    className="font-medium text-[var(--color-sea)] underline-offset-4 hover:underline"
+                  >
+                    Create your first one
+                  </Link>
+                  .
+                </>
+              )}
             </p>
           )}
 
-          {journeysQuery.data && journeysQuery.data.length > 0 && (
+          {journeys.length > 0 && (
             <ul className="space-y-3">
-              {journeysQuery.data.map((journey) => (
+              {journeys.map((journey) => (
                 <li
                   key={journey.id}
                   className="interactive-entry flex flex-col gap-3 border border-[var(--color-line)] bg-[color-mix(in_srgb,var(--color-paper)_82%,transparent)] p-4 sm:flex-row sm:items-center sm:gap-6 sm:p-5"

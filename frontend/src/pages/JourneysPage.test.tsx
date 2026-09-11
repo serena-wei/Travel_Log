@@ -98,7 +98,7 @@ describe('JourneysPage', () => {
     renderJourneys()
 
     expect(await screen.findByText('South Island')).toBeInTheDocument()
-    expect(mockedListJourneys).toHaveBeenCalledWith('token-123')
+    expect(mockedListJourneys).toHaveBeenCalledWith('token-123', { query: '' })
   })
 
   it('deletes a journey after confirm', async () => {
