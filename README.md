@@ -1,161 +1,161 @@
 # TravelLog
 
-Personal travel journal — private by default, share when you want.
+TravelLog is a full-stack travel journaling app. Travellers keep private journeys and events (with photos), optionally share journeys publicly, and browse other people’s public trips on Explore. Editors and admins get simple role-based dashboards after login.
 
-Portfolio remake of a university studio project as a production-style modular monolith: React + TypeScript frontend, Java 21 / Spring Boot 4 REST API, PostgreSQL, and AWS-ready structure.
+This repo is a learning / portfolio project: React + TypeScript on the frontend, Java 21 + Spring Boot on the backend, PostgreSQL for data, optional S3 for images, JWT auth, and Flyway migrations.
+
+## Features
+
+- **Auth** — register / login with JWT; roles: `TRAVELLER`, `EDITOR`, `ADMIN`
+- **My journeys** — create, edit, delete journeys; optional public visibility; search by title or description
+- **Events** — timeline entries under a journey (title, description, happened-at); create / edit / delete
+- **Photos** — up to 9 images per event via S3 presigned upload (replace / delete supported)
+- **Explore** — browse public journeys (paginated), search by title or description, open read-only detail; cover image = first photo on the journey; owner avatar shown when set
+- **Profile** — update display name; upload / remove avatar (S3)
+- **Dashboard** — post-login home by role (traveller / editor / admin)
+
+Without S3 env vars, the API still runs using a fake object-storage stub (URLs won’t load real images).
 
 ## Stack
 
-| Layer | Choice |
-|-------|--------|
-| Frontend | React, TypeScript, Vite, Tailwind CSS, TanStack Query |
-| Backend | Java 21, Spring Boot 4.1, Spring Web MVC, Spring Security, JPA, Flyway |
-| Auth | JWT Bearer (`sub` = user id) |
-| Database | PostgreSQL 16 |
-| Local infra | Docker Compose |
-| CI | GitHub Actions |
+| Layer | Tech |
+| --- | --- |
+| Frontend | React 19, TypeScript, Vite, React Router |
+| Backend | Java 21, Spring Boot 3.5, Spring Security, Spring Data JPA |
+| Database | PostgreSQL 16 + Flyway |
+| Auth | JWT (Bearer), BCrypt passwords |
+| Images | AWS S3 (presigned PUT) when configured |
+| Tests | Vitest + Testing Library (frontend), JUnit (backend) |
 
-## Prerequisites
+## Quick start (local)
 
-- JDK 21+
-- Node.js 22+ (matches CI)
-- Docker Desktop (Compose + Testcontainers)
+### Prerequisites
 
-## Quick start
+- Node.js 20+
+- Java 21+
+- Docker (for Postgres)
+
+### 1. Postgres
 
 ```bash
-# 1. Database
 docker compose up -d
+```
 
-# 2. Backend (port 8080)
+Defaults: database / user / password = `travellog` on port `5432`.
+
+### 2. Backend
+
+```bash
 cd backend
 ./mvnw spring-boot:run
+```
 
-# 3. Frontend (port 5173)
-cd ../frontend
-cp ../.env.example .env.local   # optional; defaults already point at localhost:8080
+API: `http://localhost:8080`  
+Health: `GET /api/v1/health`
+
+**Optional — real photos / avatars (S3)**  
+Copy `.env.example` → `.env` at the repo root, fill in bucket / region / AWS keys, then start the backend with those vars loaded, e.g.:
+
+```bash
+set -a && source ../.env && set +a   # from backend/, if .env is at repo root
+./mvnw spring-boot:run
+```
+
+Required vars when using S3: `TRAVELLOG_S3_BUCKET`, `TRAVELLOG_S3_REGION`, `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`.
+
+### 3. Frontend
+
+```bash
+cd frontend
+cp .env.example .env.local   # VITE_API_BASE_URL=http://localhost:8080
 npm install
 npm run dev
 ```
 
-Open http://localhost:5173 — register or sign in, then use **Journeys**. The home footer shows API health `UP` when the backend is running.
+App: `http://localhost:5173`
 
-If port `5432` is already taken by a local Postgres, stop that service or change the Compose port mapping before starting.
+### 4. Smoke check
 
-## What works today
+1. Open `/`, register a traveller, land on `/dashboard`
+2. Create a journey → add an event → upload photos (needs S3)
+3. Mark a journey public → open **Explore** → search / paginate / open detail
+4. Update profile name / avatar under **Profile**
 
-### Frontend routes
+## Frontend routes
 
-| Path | Notes |
-|------|--------|
-| `/` | Marketing home |
-| `/register`, `/login` | Auth forms; login lands on `/journeys` |
-| `/journeys` | List; open detail, or Edit / Delete |
-| `/journeys/new` | Create journey |
-| `/journeys/:id` | Read-only journey + events timeline |
-| `/journeys/:id/edit` | Edit journey details |
-| `/journeys/:journeyId/events/new` | Create event |
-| `/journeys/:journeyId/events/:eventId` | Read-only event + photos |
-| `/journeys/:journeyId/events/:eventId/edit` | Edit event details |
+| Path | Access | Notes |
+| --- | --- | --- |
+| `/` | Public | Landing |
+| `/login`, `/register` | Public | Auth |
+| `/dashboard` | Auth | Role-based home |
+| `/profile` | Auth | Name + avatar |
+| `/journeys` | Auth | My journeys (+ search) |
+| `/journeys/new`, `/journeys/:id`, `.../edit` | Auth | Journey CRUD |
+| `/journeys/:id/events/...` | Auth | Event CRUD + photos |
+| `/explore` | Auth | Public journeys (page size 10, `query` search) |
+| `/explore/:id`, `/explore/.../events/...` | Auth | Read-only public detail |
 
-### API (v1)
+Authenticated pages use a shared header (logo, nav, avatar menu). Confirm dialogs are portaled to `document.body` so they aren’t clipped by overflow.
 
-| Method | Path | Auth |
-|--------|------|------|
-| `GET` | `/api/v1/health` | no |
-| `POST` | `/api/v1/auth/register` | no |
-| `POST` | `/api/v1/auth/login` | no |
-| `GET` | `/api/v1/users/current` | Bearer |
-| `GET/POST` | `/api/v1/journeys` | Bearer |
-| `GET/PUT/DELETE` | `/api/v1/journeys/{id}` | Bearer (owner only) |
-| `GET/POST` | `/api/v1/journeys/{journeyId}/events` | Bearer (journey owner) |
-| `GET/PUT/DELETE` | `/api/v1/journeys/{journeyId}/events/{eventId}` | Bearer (journey owner) |
-| `POST` | `/api/v1/journeys/{journeyId}/events/{eventId}/photos/presign` | Bearer (journey owner) |
-| `POST` | `/api/v1/journeys/{journeyId}/events/{eventId}/photos/{photoId}/presign-replace` | Bearer (journey owner) |
-| `DELETE` | `/api/v1/journeys/{journeyId}/events/{eventId}/photos/{photoId}` | Bearer (journey owner) |
+## API overview
 
-Journeys default to `PRIVATE`. Missing or non-owned journeys return `404` with `JOURNEY_NOT_FOUND`. Events include title, description, start/end time, and up to **10 photos** (JPEG/PNG/WebP, 5MB each) via S3 presigned upload. Missing events return `EVENT_NOT_FOUND`. Event edit supports adding, replacing, and deleting photos.
+Base path: `/api/v1`
 
-### S3 photos (local)
+| Area | Endpoints (summary) |
+| --- | --- |
+| Health | `GET /health` |
+| Auth | `POST /auth/register`, `POST /auth/login` |
+| User | `GET /users/current`, `PATCH /users/current`, avatar `POST .../avatar/presign`, `DELETE .../avatar` |
+| Journeys (own) | `GET /journeys?query=`, `POST /journeys`, `GET/PUT/DELETE /journeys/{id}` |
+| Public journeys | `GET /public/journeys?page=&size=&query=` → `PageResponse` |
+| Events | under `/journeys/{journeyId}/events` |
+| Photos | under `.../events/{eventId}/photos` (presign, replace, delete) |
 
-Export before starting the backend (values from your IAM user / bucket):
+Notes:
 
-```bash
-export TRAVELLOG_S3_BUCKET=travellog-photos-serena
-export TRAVELLOG_S3_REGION=ap-southeast-2
-export AWS_ACCESS_KEY_ID=...
-export AWS_SECRET_ACCESS_KEY=...
-```
+- `query` matches **title or description** (case-insensitive). Empty / omitted `query` returns the full list (or page).
+- Public list default: `page=0`, `size=10`. Response shape: `content`, `page`, `size`, `totalElements`, `totalPages`.
+- Journey responses may include `coverPhotoUrl` and `ownerAvatarUrl` for list UIs.
 
-Without `TRAVELLOG_S3_BUCKET`, the API still starts and uses a fake storage stub (CI-safe); browser uploads to real S3 need the exports above plus bucket CORS for `http://localhost:5173`.
+## Project layout
 
-### Auth examples
-
-Register:
-
-```bash
-curl -s -X POST http://localhost:8080/api/v1/auth/register \
-  -H 'Content-Type: application/json' \
-  -d '{
-    "username": "alice",
-    "email": "alice@example.com",
-    "password": "Secret123",
-    "confirmPassword": "Secret123"
-  }'
-```
-
-Login:
-
-```bash
-curl -s -X POST http://localhost:8080/api/v1/auth/login \
-  -H 'Content-Type: application/json' \
-  -d '{
-    "username": "alice",
-    "password": "Secret123"
-  }'
-```
-
-Current user / journeys (replace `TOKEN`):
-
-```bash
-curl -s http://localhost:8080/api/v1/users/current \
-  -H "Authorization: Bearer TOKEN"
-
-curl -s http://localhost:8080/api/v1/journeys \
-  -H "Authorization: Bearer TOKEN"
+```text
+Travel_Log/
+├── backend/                 # Spring Boot API
+│   └── src/main/resources/db/migration/   # Flyway V1–V7
+├── frontend/                # Vite + React app
+├── docker-compose.yml       # Local Postgres
+├── .env.example             # Env template (no secrets)
+└── README.md
 ```
 
 ## Tests
 
 ```bash
-# Backend (requires Docker for Testcontainers; tests are skipped if Docker is unavailable)
-cd backend && ./mvnw test
-
 # Frontend
-cd frontend && npm test && npm run build
+cd frontend && npm test
+
+# Backend
+cd backend && ./mvnw test
 ```
 
-Install and start [Docker Desktop](https://www.docker.com/products/docker-desktop/) before running backend tests or `docker compose up`.
+## Roadmap
 
-## Repository layout
+**Done**
 
-```text
-backend/                 Spring Boot modular monolith
-  src/main/java/.../user
-  src/main/java/.../journey
-  src/main/java/.../security
-frontend/                React SPA (pages, auth, api client)
-docker-compose.yml
-.github/workflows/ci.yml
-```
+- Auth (register / login / JWT / roles)
+- Journeys + events CRUD
+- Event photos (S3 presign) + journey cover from first photo
+- Public Explore (list, detail, pagination, title/description search)
+- My journeys search
+- Profile (display name + avatar)
+- Role dashboards + shared app chrome
 
-## Phase roadmap
+**Next**
 
-1. **Phase 1** — engineering skeleton, health check, CI *(done)*
-2. **Phase 2** — JWT auth + journey/event CRUD (API + UI) *(done)*; event photo upload to S3 *(in progress)*
-3. **Phase 3** — AWS deploy (RDS, app host), richer tests; photo edit/delete polish
-4. **Phase 4** — polish for resume / demo
+- Hardening / polish for AWS deploy (RDS, EC2/API, S3, CloudFront, CORS, secrets)
+- Optional: richer Explore filters, editor/admin workflows beyond the stub dashboards
 
 ## License
 
-Private portfolio project unless otherwise stated.
+Private / personal project — not published as open source unless you add a license later.
