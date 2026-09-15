@@ -236,13 +236,21 @@ export function ProfilePage() {
                     <p className="mt-6 text-sm text-[var(--color-sea-deep)]">{formSuccess}</p>
                   )}
 
-                  <button
-                    type="button"
-                    onClick={startEditing}
-                    className="mt-8 bg-[var(--color-sea)] px-6 py-3 text-[11px] font-medium tracking-[0.22em] text-white uppercase transition hover:bg-[var(--color-sea-deep)]"
-                  >
-                    Edit profile
-                  </button>
+                  <div className="mt-8 flex flex-wrap gap-3">
+                    <button
+                      type="button"
+                      onClick={startEditing}
+                      className="bg-[var(--color-sea)] px-6 py-3 text-[11px] font-medium tracking-[0.22em] text-white uppercase transition hover:bg-[var(--color-sea-deep)]"
+                    >
+                      Edit profile
+                    </button>
+                    <Link
+                      to="/profile/password"
+                      className="bg-[var(--color-sea)] px-6 py-3 text-[11px] font-medium tracking-[0.22em] !text-white uppercase transition hover:bg-[var(--color-sea-deep)] hover:!text-white"
+                    >
+                      Change password
+                    </Link>
+                  </div>
                 </section>
               </>
             )}

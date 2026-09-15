@@ -166,6 +166,26 @@ export async function updateCurrentUser(
   return response.json() as Promise<UserResponse>
 }
 
+export type ChangePasswordRequest = {
+  currentPassword: string
+  newPassword: string
+  confirmNewPassword: string
+}
+
+export async function changePassword(
+  accessToken: string,
+  request: ChangePasswordRequest,
+): Promise<void> {
+  const response = await fetch(`${API_BASE_URL}${API_V1}/users/current/password`, {
+    method: 'PUT',
+    headers: authJsonHeaders(accessToken),
+    body: JSON.stringify(request),
+  })
+  if (!response.ok) {
+    throw await parseApiError(response)
+  }
+}
+
 export type PresignAvatarResponse = {
   uploadUrl: string
   objectKey: string
