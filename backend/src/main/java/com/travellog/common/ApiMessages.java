@@ -4,6 +4,9 @@ public final class ApiMessages {
 
 	public static final String AUTHENTICATION_REQUIRED = "Authentication required";
 	public static final String INVALID_CREDENTIALS = "Invalid username or password";
+	public static final String CURRENT_PASSWORD_INCORRECT = "Current password is incorrect";
+	public static final String NEW_PASSWORD_SAME_AS_CURRENT =
+			"New password must be different from the current password";
 	public static final String ACCOUNT_DISABLED = "Account is disabled";
 	public static final String USERNAME_TAKEN = "Username is already taken";
 	public static final String EMAIL_IN_USE = "Email is already in use";

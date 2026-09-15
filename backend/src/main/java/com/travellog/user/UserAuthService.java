@@ -4,10 +4,13 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Map;
+
 import com.travellog.common.ApiMessages;
 import com.travellog.common.ConflictException;
 import com.travellog.common.ErrorCode;
 import com.travellog.common.UnauthorizedException;
+import com.travellog.common.ValidationException;
 import com.travellog.security.JwtService;
 
 @Service
@@ -71,6 +74,31 @@ public class UserAuthService {
 		}
 
 		return AuthResponse.bearer(jwtService.generateToken(user), userProfileService.toResponse(user));
+	}
+
+	@Transactional
+	public void changePassword(Long userId, ChangePasswordRequest request) {
+		User user = userRepository.findById(userId)
+				.orElseThrow(() -> new UnauthorizedException(
+						ErrorCode.UNAUTHORIZED,
+						ApiMessages.AUTHENTICATION_REQUIRED));
+
+		if (!passwordEncoder.matches(request.getCurrentPassword(), user.getPasswordHash())) {
+			throw new ValidationException(
+					ErrorCode.CURRENT_PASSWORD_INCORRECT,
+					ApiMessages.CURRENT_PASSWORD_INCORRECT,
+					Map.of("currentPassword", ApiMessages.CURRENT_PASSWORD_INCORRECT));
+		}
+
+		if (passwordEncoder.matches(request.getNewPassword(), user.getPasswordHash())) {
+			throw new ValidationException(
+					ErrorCode.VALIDATION_FAILED,
+					ApiMessages.NEW_PASSWORD_SAME_AS_CURRENT,
+					Map.of("newPassword", ApiMessages.NEW_PASSWORD_SAME_AS_CURRENT));
+		}
+
+		user.setPasswordHash(passwordEncoder.encode(request.getNewPassword()));
+		userRepository.save(user);
 	}
 
 	private static String trimToNull(String value) {

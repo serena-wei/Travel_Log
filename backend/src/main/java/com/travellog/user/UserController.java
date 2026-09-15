@@ -7,6 +7,7 @@ import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -20,9 +21,11 @@ import jakarta.validation.Valid;
 public class UserController {
 
 	private final UserProfileService userProfileService;
+	private final UserAuthService userAuthService;
 
-	public UserController(UserProfileService userProfileService) {
+	public UserController(UserProfileService userProfileService, UserAuthService userAuthService) {
 		this.userProfileService = userProfileService;
+		this.userAuthService = userAuthService;
 	}
 
 	@GetMapping("/current")
@@ -35,6 +38,14 @@ public class UserController {
 			@AuthenticationPrincipal TravelLogUserDetails principal,
 			@Valid @RequestBody UpdateUserProfileRequest request) {
 		return userProfileService.updateCurrentUser(principal.getUserId(), request);
+	}
+
+	@PutMapping("/current/password")
+	public ResponseEntity<Void> changePassword(
+			@AuthenticationPrincipal TravelLogUserDetails principal,
+			@Valid @RequestBody ChangePasswordRequest request) {
+		userAuthService.changePassword(principal.getUserId(), request);
+		return ResponseEntity.noContent().build();
 	}
 
 	@PostMapping("/current/avatar/presign")
