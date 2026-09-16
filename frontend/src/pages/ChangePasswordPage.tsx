@@ -11,7 +11,7 @@ type PasswordFieldErrors = Partial<
 >
 
 export function ChangePasswordPage() {
-  const { accessToken } = useAuth()
+  const { accessToken, logout } = useAuth()
   const navigate = useNavigate()
 
   const [currentPassword, setCurrentPassword] = useState('')
@@ -19,7 +19,6 @@ export function ChangePasswordPage() {
   const [confirmNewPassword, setConfirmNewPassword] = useState('')
   const [fieldErrors, setFieldErrors] = useState<PasswordFieldErrors>({})
   const [formError, setFormError] = useState<string | null>(null)
-  const [formSuccess, setFormSuccess] = useState<string | null>(null)
 
   const passwordMutation = useMutation({
     mutationFn: () =>
@@ -31,14 +30,15 @@ export function ChangePasswordPage() {
     onMutate: () => {
       setFieldErrors({})
       setFormError(null)
-      setFormSuccess(null)
     },
     onSuccess: () => {
-      setCurrentPassword('')
-      setNewPassword('')
-      setConfirmNewPassword('')
-      setFieldErrors({})
-      setFormSuccess('Password updated.')
+      logout()
+      void navigate('/login', {
+        replace: true,
+        state: {
+          notice: 'Password updated. Please sign in again with your new password.',
+        },
+      })
     },
     onError: (error: Error) => {
       if (error instanceof ApiError) {
@@ -91,7 +91,6 @@ export function ChangePasswordPage() {
     if (Object.keys(localErrors).length > 0) {
       setFieldErrors(localErrors)
       setFormError(null)
-      setFormSuccess(null)
       return
     }
 
@@ -156,9 +155,6 @@ export function ChangePasswordPage() {
               <p role="alert" className="mb-4 text-sm text-[var(--color-danger)]">
                 {formError}
               </p>
-            )}
-            {formSuccess && (
-              <p className="mb-4 text-sm text-[var(--color-sea-deep)]">{formSuccess}</p>
             )}
 
             <div className="mt-2 flex flex-wrap gap-3">
