@@ -198,12 +198,22 @@ export function ProfilePage() {
                 <h1 className="font-[family-name:var(--font-display)] text-4xl font-medium tracking-wide text-[var(--color-ink)] sm:text-5xl">
                   Your profile
                 </h1>
-                <Link
-                  to="/dashboard"
-                  className="shrink-0 text-[11px] font-medium tracking-[0.2em] text-[var(--color-sea)] uppercase transition hover:text-[var(--color-sea-deep)]"
-                >
-                  ← Dashboard
-                </Link>
+                {isEditing ? (
+                  <button
+                    type="button"
+                    onClick={cancelEditing}
+                    className="shrink-0 text-[11px] font-medium tracking-[0.2em] text-[var(--color-sea)] uppercase transition hover:text-[var(--color-sea-deep)]"
+                  >
+                    ← Profile
+                  </button>
+                ) : (
+                  <Link
+                    to="/dashboard"
+                    className="shrink-0 text-[11px] font-medium tracking-[0.2em] text-[var(--color-sea)] uppercase transition hover:text-[var(--color-sea-deep)]"
+                  >
+                    ← Dashboard
+                  </Link>
+                )}
               </div>
             </div>
 

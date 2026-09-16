@@ -22,6 +22,13 @@ export function LoginPage() {
     typeof location.state.from === 'string'
       ? location.state.from
       : null
+  const notice =
+    typeof location.state === 'object' &&
+    location.state !== null &&
+    'notice' in location.state &&
+    typeof location.state.notice === 'string'
+      ? location.state.notice
+      : null
   const redirectTo = isIntentionalLogout() || !from ? '/dashboard' : from
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
@@ -125,6 +132,15 @@ export function LoginPage() {
           <p className="mt-3 font-light text-[var(--color-stone)]">
             Enter your details to open your private journal.
           </p>
+
+          {notice && (
+            <p
+              role="status"
+              className="mt-5 border border-[var(--color-line)] bg-[color-mix(in_srgb,var(--color-sea-soft)_70%,white)] px-4 py-3 text-sm text-[var(--color-sea-deep)]"
+            >
+              {notice}
+            </p>
+          )}
 
           <form
             onSubmit={handleSubmit}
