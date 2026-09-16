@@ -11,6 +11,7 @@ import { JourneyEditPage } from './pages/JourneyEditPage'
 import { JourneysPage } from './pages/JourneysPage'
 import { LoginPage } from './pages/LoginPage'
 import { ProfilePage } from './pages/ProfilePage'
+import { ChangePasswordPage } from './pages/ChangePasswordPage'
 import { PublicJourneysPage } from './pages/PublicJourneysPage'
 import { RegisterPage } from './pages/RegisterPage'
 
@@ -33,6 +34,14 @@ export default function App() {
         element={
           <RequireAuth>
             <ProfilePage />
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/profile/password"
+        element={
+          <RequireAuth>
+            <ChangePasswordPage />
           </RequireAuth>
         }
       />
