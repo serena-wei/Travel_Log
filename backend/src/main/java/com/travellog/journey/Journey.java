@@ -54,6 +54,9 @@ public class Journey {
 	@Column(nullable = false, length = 20)
 	private JourneyVisibility visibility = JourneyVisibility.PRIVATE;
 
+	@Column(nullable = false)
+	private boolean hidden = false;
+
 	@Column(name = "created_at", nullable = false)
 	@Setter(lombok.AccessLevel.NONE)
 	private Instant createdAt;

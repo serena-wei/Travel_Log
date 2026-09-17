@@ -12,13 +12,17 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.travellog.common.ApiMessages;
 import com.travellog.common.ErrorCode;
+import com.travellog.common.ForbiddenException;
+import com.travellog.common.NotFoundException;
 import com.travellog.common.PageResponse;
 import com.travellog.common.UnauthorizedException;
+import com.travellog.common.ValidationException;
 import com.travellog.event.EventPhotoService;
 import com.travellog.storage.ObjectStorage;
 import com.travellog.storage.S3Properties;
 import com.travellog.user.User;
 import com.travellog.user.UserRepository;
+import com.travellog.user.UserRole;
 
 @Service
 public class JourneyService {
@@ -119,6 +123,48 @@ public class JourneyService {
 		Journey journey = journeyAccess.requireOwned(userId, journeyId);
 		eventPhotoService.deleteStorageForJourney(journeyId);
 		journeyRepository.delete(journey);
+	}
+
+	@Transactional
+	public JourneyResponse hidePublicJourney(Long moderatorUserId, Long journeyId) {
+		requireModerator(moderatorUserId);
+		Journey journey = requireJourneyWithUser(journeyId);
+		requirePublicJourney(journey);
+		journey.setHidden(true);
+		Journey saved = journeyRepository.save(journey);
+		return toResponse(saved, eventPhotoService.resolveCoverDownloadUrl(saved.getId()));
+	}
+
+	@Transactional
+	public JourneyResponse unhidePublicJourney(Long moderatorUserId, Long journeyId) {
+		requireModerator(moderatorUserId);
+		Journey journey = requireJourneyWithUser(journeyId);
+		requirePublicJourney(journey);
+		journey.setHidden(false);
+		Journey saved = journeyRepository.save(journey);
+		return toResponse(saved, eventPhotoService.resolveCoverDownloadUrl(saved.getId()));
+	}
+
+	private void requireModerator(Long userId) {
+		User user = requireUser(userId);
+		UserRole role = user.getRole();
+		if (role != UserRole.EDITOR && role != UserRole.ADMIN) {
+			throw new ForbiddenException(ErrorCode.FORBIDDEN, ApiMessages.FORBIDDEN);
+		}
+	}
+
+	private Journey requireJourneyWithUser(Long journeyId) {
+		return journeyRepository.findByIdWithUser(journeyId)
+				.orElseThrow(() -> new NotFoundException(ErrorCode.JOURNEY_NOT_FOUND, ApiMessages.JOURNEY_NOT_FOUND));
+	}
+
+	private static void requirePublicJourney(Journey journey) {
+		if (journey.getVisibility() != JourneyVisibility.PUBLIC) {
+			throw new ValidationException(
+					ErrorCode.VALIDATION_FAILED,
+					ApiMessages.JOURNEY_NOT_PUBLIC,
+					Map.of("visibility", ApiMessages.JOURNEY_NOT_PUBLIC));
+		}
 	}
 
 	private List<JourneyResponse> toResponses(List<Journey> journeys) {

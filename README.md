@@ -11,7 +11,8 @@ This repo is a learning / portfolio project: React + TypeScript on the frontend,
 - **Events** — timeline entries under a journey (title, description, happened-at); create / edit / delete
 - **Photos** — up to 9 images per event via S3 presigned upload (replace / delete supported)
 - **Explore** — browse public journeys (paginated), search by title or description, open read-only detail; cover image = first photo on the journey; owner avatar shown when set
-- **Profile** — update display name; upload / remove avatar (S3)
+- **Moderation** — editors/admins can hide (or unhide) a public journey so it no longer appears on Explore for travellers
+- **Profile** — update display name / password; upload / remove avatar (S3)
 - **Dashboard** — post-login home by role (traveller / editor / admin)
 
 Without S3 env vars, the API still runs using a fake object-storage stub (URLs won’t load real images).
@@ -88,7 +89,7 @@ App: `http://localhost:5173`
 | `/` | Public | Landing |
 | `/login`, `/register` | Public | Auth |
 | `/dashboard` | Auth | Role-based home |
-| `/profile` | Auth | Name + avatar |
+| `/profile` | Auth | Name + avatar; change password via `/profile/password` |
 | `/journeys` | Auth | My journeys (+ search) |
 | `/journeys/new`, `/journeys/:id`, `.../edit` | Auth | Journey CRUD |
 | `/journeys/:id/events/...` | Auth | Event CRUD + photos |
@@ -105,9 +106,10 @@ Base path: `/api/v1`
 | --- | --- |
 | Health | `GET /health` |
 | Auth | `POST /auth/register`, `POST /auth/login` |
-| User | `GET /users/current`, `PATCH /users/current`, avatar `POST .../avatar/presign`, `DELETE .../avatar` |
+| User | `GET /users/current`, `PATCH /users/current`, `PUT /users/current/password`, avatar `POST .../avatar/presign`, `DELETE .../avatar` |
 | Journeys (own) | `GET /journeys?query=`, `POST /journeys`, `GET/PUT/DELETE /journeys/{id}` |
-| Public journeys | `GET /public/journeys?page=&size=&query=` → `PageResponse` |
+| Public journeys | `GET /public/journeys?page=&size=&query=` → `PageResponse` (excludes hidden) |
+| Moderation | `POST /moderation/journeys/{id}/hide`, `POST /moderation/journeys/{id}/unhide` (EDITOR/ADMIN only) |
 | Events | under `/journeys/{journeyId}/events` |
 | Photos | under `.../events/{eventId}/photos` (presign, replace, delete) |
 
@@ -115,14 +117,15 @@ Notes:
 
 - `query` matches **title or description** (case-insensitive). Empty / omitted `query` returns the full list (or page).
 - Public list default: `page=0`, `size=10`. Response shape: `content`, `page`, `size`, `totalElements`, `totalPages`.
-- Journey responses may include `coverPhotoUrl` and `ownerAvatarUrl` for list UIs.
+- Journey responses may include `coverImageUrl`, `ownerAvatarUrl`, and `hidden` (moderation flag; Explore only lists `visibility=PUBLIC` and `hidden=false`).
+- Hiding does **not** change the owner’s visibility setting; it only removes the journey from Explore for travellers. Owners still see their own journeys. Editors/admins can still open a hidden public journey.
 
 ## Project layout
 
 ```text
 Travel_Log/
 ├── backend/                 # Spring Boot API
-│   └── src/main/resources/db/migration/   # Flyway V1–V7
+│   └── src/main/resources/db/migration/   # Flyway V1–V8
 ├── frontend/                # Vite + React app
 ├── docker-compose.yml       # Local Postgres
 ├── .env.example             # Env template (no secrets)
@@ -148,13 +151,14 @@ cd backend && ./mvnw test
 - Event photos (S3 presign) + journey cover from first photo
 - Public Explore (list, detail, pagination, title/description search)
 - My journeys search
-- Profile (display name + avatar)
+- Profile (display name + avatar + change password)
 - Role dashboards + shared app chrome
+- Editor/admin hide (and unhide) public journeys from Explore
 
 **Next**
 
 - Hardening / polish for AWS deploy (RDS, EC2/API, S3, CloudFront, CORS, secrets)
-- Optional: richer Explore filters, editor/admin workflows beyond the stub dashboards
+- Optional: richer Explore filters, editor/admin moderation UI beyond the API
 
 ## License
 
