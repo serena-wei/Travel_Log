@@ -1,23 +1,30 @@
 import { useEffect, useState } from 'react'
 import type { FormEvent, KeyboardEvent } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
-import { keepPreviousData, useQuery } from '@tanstack/react-query'
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   ApiError,
+  hidePublicJourney,
   listPublicJourneys,
   PUBLIC_JOURNEYS_PAGE_SIZE,
   type JourneyResponse,
 } from '../api/client'
 import { queryKeys } from '../api/queryKeys'
+import { normalizeUserRole } from '../auth/dashboardConfig'
 import { useAuth } from '../auth/useAuth'
 import { AppShell } from '../components/AppShell'
+import { ConfirmDialog } from '../components/ConfirmDialog'
 
 export function PublicJourneysPage() {
-  const { accessToken } = useAuth()
+  const queryClient = useQueryClient()
+  const { accessToken, user } = useAuth()
+  const role = normalizeUserRole(user?.role)
+  const canModerate = role === 'EDITOR' || role === 'ADMIN'
   const [searchParams, setSearchParams] = useSearchParams()
   const page = parsePageParam(searchParams.get('page'))
   const query = (searchParams.get('query') ?? '').trim()
   const [draftQuery, setDraftQuery] = useState(query)
+  const [pendingHide, setPendingHide] = useState<{ id: number; title: string } | null>(null)
 
   useEffect(() => {
     setDraftQuery(query)
@@ -33,6 +40,15 @@ export function PublicJourneysPage() {
       }),
     enabled: Boolean(accessToken),
     placeholderData: keepPreviousData,
+  })
+
+  const hideMutation = useMutation({
+    mutationFn: (journeyId: number) => hidePublicJourney(accessToken!, journeyId),
+    onSuccess: async (_data, journeyId) => {
+      setPendingHide(null)
+      await queryClient.invalidateQueries({ queryKey: queryKeys.journeys.all })
+      queryClient.removeQueries({ queryKey: queryKeys.journeys.detail(journeyId) })
+    },
   })
 
   const pageData = journeysQuery.data
@@ -157,6 +173,14 @@ export function PublicJourneysPage() {
             </p>
           )}
 
+          {hideMutation.isError && (
+            <p role="alert" className="mb-4 text-sm text-[var(--color-danger)]">
+              {hideMutation.error instanceof ApiError
+                ? hideMutation.error.message
+                : 'Unable to hide this journey right now.'}
+            </p>
+          )}
+
           {pageData && pageData.totalElements === 0 && (
             <p className="text-sm font-light text-[var(--color-stone)]">
               {query
@@ -169,11 +193,11 @@ export function PublicJourneysPage() {
             <>
               <ul className="space-y-3">
                 {journeys.map((journey) => (
-                  <li key={journey.id}>
-                    <Link
-                      to={`/explore/${journey.id}`}
-                      className="interactive-entry flex gap-4 border border-[var(--color-line)] bg-[color-mix(in_srgb,var(--color-paper)_82%,transparent)] p-3 sm:gap-5 sm:p-4"
-                    >
+                  <li
+                    key={journey.id}
+                    className="interactive-entry flex flex-col gap-3 border border-[var(--color-line)] bg-[color-mix(in_srgb,var(--color-paper)_82%,transparent)] p-3 sm:flex-row sm:items-center sm:gap-5 sm:p-4"
+                  >
+                    <Link to={`/explore/${journey.id}`} className="flex min-w-0 flex-1 gap-4">
                       <CoverThumb journey={journey} />
                       <span className="flex min-w-0 flex-1 flex-col justify-center py-0.5">
                         <p className="interactive-entry-title font-[family-name:var(--font-display)] text-xl font-medium tracking-wide text-[var(--color-ink)] transition-colors sm:text-2xl">
@@ -208,6 +232,18 @@ export function PublicJourneysPage() {
                         </p>
                       </span>
                     </Link>
+                    {canModerate && (
+                      <div className="flex shrink-0 items-center sm:self-center">
+                        <button
+                          type="button"
+                          onClick={() => setPendingHide({ id: journey.id, title: journey.title })}
+                          disabled={hideMutation.isPending}
+                          className="border border-[var(--color-line)] bg-[var(--color-paper)] px-4 py-2 text-[11px] font-medium tracking-[0.2em] text-[var(--color-ink)] uppercase transition hover:border-[var(--color-sea)] disabled:cursor-not-allowed disabled:opacity-60"
+                        >
+                          Hide
+                        </button>
+                      </div>
+                    )}
                   </li>
                 ))}
               </ul>
@@ -266,6 +302,28 @@ export function PublicJourneysPage() {
           )}
         </section>
       </main>
+
+      <ConfirmDialog
+        open={pendingHide !== null}
+        title="Hide this journey?"
+        description={
+          pendingHide
+            ? `“${pendingHide.title}” will be hidden from Explore for travellers. The owner’s journey is not deleted.`
+            : ''
+        }
+        confirmLabel={hideMutation.isPending ? 'Hiding…' : 'Hide'}
+        busy={hideMutation.isPending}
+        onCancel={() => {
+          if (!hideMutation.isPending) {
+            setPendingHide(null)
+          }
+        }}
+        onConfirm={() => {
+          if (pendingHide) {
+            hideMutation.mutate(pendingHide.id)
+          }
+        }}
+      />
     </AppShell>
   )
 }
