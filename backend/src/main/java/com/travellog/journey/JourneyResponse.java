@@ -14,6 +14,7 @@ public record JourneyResponse(
 		LocalDate startDate,
 		LocalDate endDate,
 		JourneyVisibility visibility,
+		boolean hidden,
 		Instant createdAt,
 		Instant updatedAt
 ) {
@@ -29,6 +30,7 @@ public record JourneyResponse(
 				journey.getStartDate(),
 				journey.getEndDate(),
 				journey.getVisibility(),
+				journey.isHidden(),
 				journey.getCreatedAt(),
 				journey.getUpdatedAt());
 	}

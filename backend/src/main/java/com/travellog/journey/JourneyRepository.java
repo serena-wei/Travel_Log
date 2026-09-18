@@ -32,11 +32,13 @@ public interface JourneyRepository extends JpaRepository<Journey, Long> {
 			value = """
 					SELECT j FROM Journey j JOIN FETCH j.user
 					WHERE j.visibility = :visibility
+					  AND j.hidden = false
 					ORDER BY j.updatedAt DESC
 					""",
 			countQuery = """
 					SELECT count(j) FROM Journey j
 					WHERE j.visibility = :visibility
+					  AND j.hidden = false
 					""")
 	Page<Journey> findByVisibilityOrderByUpdatedAtDesc(
 			@Param("visibility") JourneyVisibility visibility,
@@ -46,6 +48,7 @@ public interface JourneyRepository extends JpaRepository<Journey, Long> {
 			value = """
 					SELECT j FROM Journey j JOIN FETCH j.user
 					WHERE j.visibility = :visibility
+					  AND j.hidden = false
 					  AND (
 					    LOWER(j.title) LIKE LOWER(:queryPattern)
 					    OR LOWER(COALESCE(j.description, '')) LIKE LOWER(:queryPattern)
@@ -55,6 +58,7 @@ public interface JourneyRepository extends JpaRepository<Journey, Long> {
 			countQuery = """
 					SELECT count(j) FROM Journey j
 					WHERE j.visibility = :visibility
+					  AND j.hidden = false
 					  AND (
 					    LOWER(j.title) LIKE LOWER(:queryPattern)
 					    OR LOWER(COALESCE(j.description, '')) LIKE LOWER(:queryPattern)

@@ -3,6 +3,9 @@ package com.travellog.common;
 public final class ApiMessages {
 
 	public static final String AUTHENTICATION_REQUIRED = "Authentication required";
+	public static final String FORBIDDEN = "You do not have permission to perform this action";
+	public static final String JOURNEY_NOT_PUBLIC =
+			"Only public journeys can be hidden or unhidden";
 	public static final String INVALID_CREDENTIALS = "Invalid username or password";
 	public static final String CURRENT_PASSWORD_INCORRECT = "Current password is incorrect";
 	public static final String NEW_PASSWORD_SAME_AS_CURRENT =
