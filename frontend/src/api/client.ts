@@ -255,6 +255,7 @@ export type JourneyResponse = {
   startDate: string | null
   endDate: string | null
   visibility: JourneyVisibility
+  hidden?: boolean
   createdAt: string
   updatedAt: string
 }
@@ -317,6 +318,20 @@ export async function listPublicJourneys(
     throw await parseApiError(response)
   }
   return response.json() as Promise<PageResponse<JourneyResponse>>
+}
+
+export async function hidePublicJourney(
+  accessToken: string,
+  journeyId: number,
+): Promise<JourneyResponse> {
+  const response = await fetch(`${API_BASE_URL}${API_V1}/moderation/journeys/${journeyId}/hide`, {
+    method: 'POST',
+    headers: authHeaders(accessToken),
+  })
+  if (!response.ok) {
+    throw await parseApiError(response)
+  }
+  return response.json() as Promise<JourneyResponse>
 }
 
 export async function getJourney(accessToken: string, id: number): Promise<JourneyResponse> {
