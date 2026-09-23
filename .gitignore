@@ -38,3 +38,7 @@ Thumbs.db
 logs/
 tmp/
 .temp/
+
+# Local one-off seed (do not commit)
+scripts/seed-local.mjs
+scripts/seed-local.*
