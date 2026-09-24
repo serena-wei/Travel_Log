@@ -120,6 +120,24 @@ Notes:
 - Journey responses may include `coverImageUrl`, `ownerAvatarUrl`, and `hidden` (moderation flag; Explore only lists `visibility=PUBLIC` and `hidden=false`).
 - Hiding does **not** change the owner’s visibility setting; it only removes the journey from Explore for travellers. Owners still see their own journeys. Editors/admins can still open a hidden public journey.
 
+## Ops — promote ADMIN / EDITOR
+
+Registration always creates `TRAVELLER`. To promote existing users (local or production), use:
+
+```bash
+# Local (docker-compose defaults)
+./scripts/promote-roles.sh --admin Serena,demo_mei --editor demo_liam,demo_ava
+
+# Dry-run first
+./scripts/promote-roles.sh --admin Serena --dry-run
+
+# Production RDS (set password in the shell; do not commit it)
+PGHOST=YOUR_RDS_ENDPOINT PGUSER=travellog PGPASSWORD='***' PGDATABASE=travellog \
+  ./scripts/promote-roles.sh --admin Serena --editor some_editor
+```
+
+Non-localhost hosts ask for confirmation (`--yes` to skip). Affected users must **log in again** so JWT picks up the new role.
+
 ## Project layout
 
 ```text
@@ -127,6 +145,7 @@ Travel_Log/
 ├── backend/                 # Spring Boot API
 │   └── src/main/resources/db/migration/   # Flyway V1–V8
 ├── frontend/                # Vite + React app
+├── scripts/promote-roles.sh # Promote users to ADMIN/EDITOR
 ├── docker-compose.yml       # Local Postgres
 ├── .env.example             # Env template (no secrets)
 └── README.md
