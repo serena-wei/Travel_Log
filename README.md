@@ -109,7 +109,7 @@ Base path: `/api/v1`
 | User | `GET /users/current`, `PATCH /users/current`, `PUT /users/current/password`, avatar `POST .../avatar/presign`, `DELETE .../avatar` |
 | Journeys (own) | `GET /journeys?query=`, `POST /journeys`, `GET/PUT/DELETE /journeys/{id}` |
 | Public journeys | `GET /public/journeys?page=&size=&query=` → `PageResponse` (excludes hidden) |
-| Moderation | `POST /moderation/journeys/{id}/hide`, `POST /moderation/journeys/{id}/unhide` (EDITOR/ADMIN only) |
+| Moderation | `GET /moderation/journeys/hidden?page=&size=&query=` (hidden public journeys), `POST /moderation/journeys/{id}/hide`, `POST /moderation/journeys/{id}/unhide` (EDITOR/ADMIN only) |
 | Events | under `/journeys/{journeyId}/events` |
 | Photos | under `.../events/{eventId}/photos` (presign, replace, delete) |
 
@@ -118,7 +118,7 @@ Notes:
 - `query` matches **title or description** (case-insensitive). Empty / omitted `query` returns the full list (or page).
 - Public list default: `page=0`, `size=10`. Response shape: `content`, `page`, `size`, `totalElements`, `totalPages`.
 - Journey responses may include `coverImageUrl`, `ownerAvatarUrl`, and `hidden` (moderation flag; Explore only lists `visibility=PUBLIC` and `hidden=false`).
-- Hiding does **not** change the owner’s visibility setting; it only removes the journey from Explore for travellers. Owners still see their own journeys. Editors/admins can still open a hidden public journey.
+- Hiding does **not** change the owner’s visibility setting; it only removes the journey from Explore for travellers. Owners still see their own journeys. Editors/admins can still open a hidden public journey, and can list them with `GET /moderation/journeys/hidden` (same pagination and `query` as Explore; travellers receive `403`).
 
 ## Ops — promote ADMIN / EDITOR
 
