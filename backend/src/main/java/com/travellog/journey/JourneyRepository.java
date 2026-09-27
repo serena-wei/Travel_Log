@@ -69,6 +69,47 @@ public interface JourneyRepository extends JpaRepository<Journey, Long> {
 			@Param("queryPattern") String queryPattern,
 			Pageable pageable);
 
+	@Query(
+			value = """
+					SELECT j FROM Journey j JOIN FETCH j.user
+					WHERE j.visibility = :visibility
+					  AND j.hidden = true
+					ORDER BY j.updatedAt DESC
+					""",
+			countQuery = """
+					SELECT count(j) FROM Journey j
+					WHERE j.visibility = :visibility
+					  AND j.hidden = true
+					""")
+	Page<Journey> findHiddenByVisibilityOrderByUpdatedAtDesc(
+			@Param("visibility") JourneyVisibility visibility,
+			Pageable pageable);
+
+	@Query(
+			value = """
+					SELECT j FROM Journey j JOIN FETCH j.user
+					WHERE j.visibility = :visibility
+					  AND j.hidden = true
+					  AND (
+					    LOWER(j.title) LIKE LOWER(:queryPattern)
+					    OR LOWER(COALESCE(j.description, '')) LIKE LOWER(:queryPattern)
+					  )
+					ORDER BY j.updatedAt DESC
+					""",
+			countQuery = """
+					SELECT count(j) FROM Journey j
+					WHERE j.visibility = :visibility
+					  AND j.hidden = true
+					  AND (
+					    LOWER(j.title) LIKE LOWER(:queryPattern)
+					    OR LOWER(COALESCE(j.description, '')) LIKE LOWER(:queryPattern)
+					  )
+					""")
+	Page<Journey> findHiddenByVisibilityAndTitleOrDescriptionContainingIgnoreCase(
+			@Param("visibility") JourneyVisibility visibility,
+			@Param("queryPattern") String queryPattern,
+			Pageable pageable);
+
 	@Query("""
 			SELECT j FROM Journey j JOIN FETCH j.user
 			WHERE j.id = :id

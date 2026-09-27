@@ -125,6 +125,27 @@ public class JourneyService {
 		journeyRepository.delete(journey);
 	}
 
+	@Transactional(readOnly = true)
+	public PageResponse<JourneyResponse> listHiddenPublic(Long moderatorUserId, int page, int size, String query) {
+		requireModerator(moderatorUserId);
+		int safePage = Math.max(page, 0);
+		int safeSize = Math.min(Math.max(size, 1), MAX_PUBLIC_PAGE_SIZE);
+		Pageable pageable = PageRequest.of(safePage, safeSize);
+		String queryPattern = toSearchPattern(query);
+		Page<Journey> journeys = queryPattern == null
+				? journeyRepository.findHiddenByVisibilityOrderByUpdatedAtDesc(
+						JourneyVisibility.PUBLIC, pageable)
+				: journeyRepository.findHiddenByVisibilityAndTitleOrDescriptionContainingIgnoreCase(
+						JourneyVisibility.PUBLIC, queryPattern, pageable);
+		List<JourneyResponse> content = toResponses(journeys.getContent());
+		return new PageResponse<>(
+				content,
+				journeys.getNumber(),
+				journeys.getSize(),
+				journeys.getTotalElements(),
+				journeys.getTotalPages());
+	}
+
 	@Transactional
 	public JourneyResponse hidePublicJourney(Long moderatorUserId, Long journeyId) {
 		requireModerator(moderatorUserId);
