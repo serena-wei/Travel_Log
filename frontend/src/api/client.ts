@@ -320,11 +320,48 @@ export async function listPublicJourneys(
   return response.json() as Promise<PageResponse<JourneyResponse>>
 }
 
+export async function listHiddenPublicJourneys(
+  accessToken: string,
+  options: { page?: number; size?: number; query?: string } = {},
+): Promise<PageResponse<JourneyResponse>> {
+  const page = options.page ?? 0
+  const size = options.size ?? PUBLIC_JOURNEYS_PAGE_SIZE
+  const params = new URLSearchParams({
+    page: String(page),
+    size: String(size),
+  })
+  const query = options.query?.trim()
+  if (query) {
+    params.set('query', query)
+  }
+  const response = await fetch(`${API_BASE_URL}${API_V1}/moderation/journeys/hidden?${params}`, {
+    headers: authHeaders(accessToken),
+  })
+  if (!response.ok) {
+    throw await parseApiError(response)
+  }
+  return response.json() as Promise<PageResponse<JourneyResponse>>
+}
+
 export async function hidePublicJourney(
   accessToken: string,
   journeyId: number,
 ): Promise<JourneyResponse> {
   const response = await fetch(`${API_BASE_URL}${API_V1}/moderation/journeys/${journeyId}/hide`, {
+    method: 'POST',
+    headers: authHeaders(accessToken),
+  })
+  if (!response.ok) {
+    throw await parseApiError(response)
+  }
+  return response.json() as Promise<JourneyResponse>
+}
+
+export async function unhidePublicJourney(
+  accessToken: string,
+  journeyId: number,
+): Promise<JourneyResponse> {
+  const response = await fetch(`${API_BASE_URL}${API_V1}/moderation/journeys/${journeyId}/unhide`, {
     method: 'POST',
     headers: authHeaders(accessToken),
   })
