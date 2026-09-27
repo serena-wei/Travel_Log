@@ -1,4 +1,5 @@
 import { Link, NavLink, useNavigate } from 'react-router-dom'
+import { normalizeUserRole } from '../auth/dashboardConfig'
 import { useAuth } from '../auth/useAuth'
 
 const navLinkClass = ({ isActive }: { isActive: boolean }) =>
@@ -20,6 +21,8 @@ function greetingName(user: { firstName: string | null; username: string } | nul
 export function AppHeader() {
   const navigate = useNavigate()
   const { user, logout } = useAuth()
+  const role = normalizeUserRole(user?.role)
+  const canModerate = role === 'EDITOR' || role === 'ADMIN'
 
   function handleLogout() {
     logout()
@@ -43,6 +46,11 @@ export function AppHeader() {
             <NavLink to="/explore" className={navLinkClass}>
               Explore
             </NavLink>
+            {canModerate && (
+              <NavLink to="/hidden" className={navLinkClass}>
+                Hidden
+              </NavLink>
+            )}
             <NavLink to="/profile" className={navLinkClass}>
               Profile
             </NavLink>

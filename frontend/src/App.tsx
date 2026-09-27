@@ -12,6 +12,7 @@ import { JourneysPage } from './pages/JourneysPage'
 import { LoginPage } from './pages/LoginPage'
 import { ProfilePage } from './pages/ProfilePage'
 import { ChangePasswordPage } from './pages/ChangePasswordPage'
+import { HiddenJourneysPage } from './pages/HiddenJourneysPage'
 import { PublicJourneysPage } from './pages/PublicJourneysPage'
 import { RegisterPage } from './pages/RegisterPage'
 
@@ -50,6 +51,14 @@ export default function App() {
         element={
           <RequireAuth>
             <PublicJourneysPage />
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/hidden"
+        element={
+          <RequireAuth>
+            <HiddenJourneysPage />
           </RequireAuth>
         }
       />
